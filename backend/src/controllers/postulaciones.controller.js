@@ -1,0 +1,82 @@
+import { v4 as uuid } from 'uuid';
+import { query, queryOne } from '../config/db.js';
+
+export async function applyToVacante(req, res, next) {
+  try {
+    const { vacanteId } = req.body;
+    if (!vacanteId) return res.status(400).json({ error: 'vacanteId requerido' });
+    const cvUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const existing = await queryOne(
+      'SELECT id FROM postulaciones WHERE vacante_id = ? AND candidato_id = ?',
+      [vacanteId, req.user.id],
+    );
+
+    if (existing) {
+      if (cvUrl) {
+        await query('UPDATE postulaciones SET cv_url = ? WHERE id = ?', [cvUrl, existing.id]);
+      }
+      const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [existing.id]);
+      return res.json({ postulacion: post });
+    }
+
+    const id = uuid();
+    await query(
+      `INSERT INTO postulaciones (id, vacante_id, candidato_id, cv_url)
+       VALUES (?, ?, ?, ?)`,
+      [id, vacanteId, req.user.id, cvUrl],
+    );
+    const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [id]);
+    res.status(201).json({ postulacion: post });
+  } catch (e) { next(e); }
+}
+
+export async function myApplications(req, res, next) {
+  try {
+    const rows = await query(
+      `SELECT p.id, p.estado, p.cv_url AS cvUrl, p.notas, p.created_at AS createdAt,
+              v.id AS vacanteId, v.titulo, v.departamento, v.modalidad, v.estado AS vacanteEstado
+         FROM postulaciones p
+         JOIN vacantes v ON v.id = p.vacante_id
+        WHERE p.candidato_id = ?
+        ORDER BY p.created_at DESC`,
+      [req.user.id],
+    );
+    res.json({ items: rows });
+  } catch (e) { next(e); }
+}
+
+export async function listForVacante(req, res, next) {
+  try {
+    const rows = await query(
+      `SELECT p.id, p.estado, p.cv_url AS cvUrl, p.notas, p.created_at AS createdAt,
+              u.id AS candidatoId, u.full_name AS fullName, u.email, u.avatar_url AS avatarUrl
+         FROM postulaciones p
+         JOIN users u ON u.id = p.candidato_id
+        WHERE p.vacante_id = ?
+        ORDER BY p.created_at DESC`,
+      [req.params.vacanteId],
+    );
+    res.json({ items: rows });
+  } catch (e) { next(e); }
+}
+
+export async function updateEstado(req, res, next) {
+  try {
+    const { estado, notas } = req.body;
+    const allowed = ['enviada','en_revision','evaluacion','entrevista','rechazada','contratada'];
+    if (estado && !allowed.includes(estado)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
+    const sets = [];
+    const params = [];
+    if (estado !== undefined) { sets.push('estado = ?'); params.push(estado); }
+    if (notas !== undefined)  { sets.push('notas = ?');  params.push(notas); }
+    if (sets.length === 0) return res.status(400).json({ error: 'No fields to update' });
+    params.push(req.params.id);
+    const result = await query(`UPDATE postulaciones SET ${sets.join(', ')} WHERE id = ?`, params);
+    if (result.affectedRows === 0) return res.status(404).json({ error: 'Postulación no encontrada' });
+    const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [req.params.id]);
+    res.json({ postulacion: post });
+  } catch (e) { next(e); }
+}

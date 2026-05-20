@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TalentForge — Monorepo</title>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0; min-height: 100vh; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: radial-gradient(ellipse at top, #1e1b4b 0%, #0a0a1f 60%, #000 100%);
+        color: #e2e8f0; display: flex; align-items: center; justify-content: center; padding: 2rem;
+      }
+      .card {
+        max-width: 780px; width: 100%; background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 2.5rem;
+        backdrop-filter: blur(20px); box-shadow: 0 40px 80px -20px rgba(139,92,246,0.25);
+      }
+      .badge {
+        display: inline-flex; align-items: center; gap: .5rem; padding: .35rem .8rem;
+        border-radius: 999px; background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+        font-size: .75rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+      }
+      h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); margin: 1rem 0 .5rem; letter-spacing: -.02em; }
+      p { color: #94a3b8; line-height: 1.6; }
+      .grid { display: grid; gap: 1rem; grid-template-columns: 1fr 1fr; margin-top: 2rem; }
+      @media (max-width: 640px) { .grid { grid-template-columns: 1fr; } }
+      .panel {
+        background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 16px; padding: 1.25rem;
+      }
+      .panel h3 { margin: 0 0 .5rem; font-size: 1rem; display: flex; align-items: center; gap: .5rem; }
+      pre {
+        background: rgba(0,0,0,0.5); border-radius: 10px; padding: .85rem 1rem;
+        overflow-x: auto; font-size: .82rem; color: #a5f3fc; margin: .5rem 0 0;
+      }
+      .dot { width: 8px; height: 8px; border-radius: 50%; }
+      .dot.api { background: #22d3ee; box-shadow: 0 0 12px #22d3ee; }
+      .dot.web { background: #f472b6; box-shadow: 0 0 12px #f472b6; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <span class="badge">⚡ Monorepo · Local-first</span>
+      <h1>TalentForge — Sistema de Contratación</h1>
+      <p>
+        Este repositorio contiene dos proyectos independientes diseñados para
+        ejecutarse <strong>en tu máquina local</strong> con Node.js y MySQL.
+      </p>
+
+      <div class="grid">
+        <div class="panel">
+          <h3><span class="dot api"></span> Backend · Express + MySQL</h3>
+          <p style="font-size:.85rem">REST API · JWT · Multer · mysql2 (sin Prisma)</p>
+          <pre>cd backend
+cp .env.example .env
+npm install
+npm run db:seed
+npm run dev</pre>
+        </div>
+
+        <div class="panel">
+          <h3><span class="dot web"></span> Frontend · React + Vite</h3>
+          <p style="font-size:.85rem">Tailwind · React Router · Axios</p>
+          <pre>cd frontend
+cp .env.example .env
+npm install
+npm run dev</pre>
+        </div>
+      </div>
+
+      <p style="margin-top:1.75rem; font-size:.85rem">
+        📂 Esquema MySQL listo para <strong>MySQL Workbench</strong> en
+        <code style="color:#a5f3fc">backend/sql/schema.sql</code>. Compatible con Aiven.
+      </p>
+    </div>
+  </body>
+</html>
