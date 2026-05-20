@@ -12,7 +12,7 @@ export const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   dateStrings: false,
-  ...(useSSL ? { ssl: { rejectUnauthorized: true } } : {}),
+  ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 /** Helper: ejecuta una query y devuelve filas tipadas */
