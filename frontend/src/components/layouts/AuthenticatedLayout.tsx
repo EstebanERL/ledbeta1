@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Sparkles, LogOut, Loader2, Briefcase, Users, BarChart3,
-  Brain, GraduationCap, FileText, Settings, ClipboardList, Crown,
+  Brain, GraduationCap, FileText, Settings, ClipboardList, UserCircle,
 } from "lucide-react";
 
 export default function AuthenticatedLayout() {
@@ -28,29 +28,34 @@ export default function AuthenticatedLayout() {
 
   const navByRole: Record<string, { to: string; icon: any; label: string }[]> = {
     super_admin: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Visión general" },
-      { to: "/vacantes",  icon: Briefcase,       label: "Vacantes" },
-      { to: "/dashboard", icon: Users,           label: "Usuarios" },
-      { to: "/dashboard", icon: BarChart3,       label: "Reportes" },
-      { to: "/dashboard", icon: Settings,        label: "Sistema" },
+      { to: "/dashboard",   icon: LayoutDashboard, label: "Visión general" },
+      { to: "/usuarios",    icon: Users,           label: "Usuarios" },
+      { to: "/vacantes",    icon: Briefcase,       label: "Vacantes" },
+      { to: "/candidatos",  icon: ClipboardList,   label: "Candidatos" },
+      { to: "/reportes",    icon: BarChart3,       label: "Reportes" },
+      { to: "/sistema",     icon: Settings,        label: "Sistema" },
+      { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
     rrhh: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
-      { to: "/vacantes",  icon: Briefcase,       label: "Vacantes" },
-      { to: "/dashboard", icon: Users,           label: "Candidatos" },
-      { to: "/dashboard", icon: BarChart3,       label: "Pipeline" },
+      { to: "/dashboard",   icon: LayoutDashboard, label: "Inicio" },
+      { to: "/vacantes",    icon: Briefcase,       label: "Vacantes" },
+      { to: "/candidatos",  icon: Users,           label: "Candidatos" },
+      { to: "/evaluaciones",icon: ClipboardList,   label: "Evaluaciones" },
+      { to: "/reportes",    icon: BarChart3,       label: "Reportes" },
+      { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
     evaluador: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Inicio" },
-      { to: "/dashboard", icon: Brain,           label: "Evaluaciones" },
-      { to: "/dashboard", icon: ClipboardList,   label: "Pruebas" },
-      { to: "/dashboard", icon: FileText,        label: "Reportes" },
+      { to: "/dashboard",   icon: LayoutDashboard, label: "Inicio" },
+      { to: "/evaluaciones",icon: Brain,           label: "Evaluaciones" },
+      { to: "/candidatos",  icon: Users,           label: "Candidatos" },
+      { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
     candidato: [
-      { to: "/dashboard", icon: LayoutDashboard, label: "Mi panel" },
-      { to: "/empleos",   icon: Briefcase,       label: "Empleos" },
-      { to: "/dashboard", icon: FileText,        label: "Postulaciones" },
-      { to: "/dashboard", icon: GraduationCap,   label: "Inducción" },
+      { to: "/dashboard",   icon: LayoutDashboard, label: "Mi panel" },
+      { to: "/empleos",     icon: Briefcase,       label: "Empleos" },
+      { to: "/postulaciones", icon: FileText,      label: "Postulaciones" },
+      { to: "/induccion",   icon: GraduationCap,   label: "Inducción" },
+      { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
   };
 
