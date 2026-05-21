@@ -1,94 +1,102 @@
 import { PageHeader, StatCard, Section } from "./shared";
-import { Users, Briefcase, ShieldCheck, Activity, Server } from "lucide-react";
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend } from "recharts";
+import { Users, Briefcase, ShieldCheck, Activity, FileText, Loader2 } from "lucide-react";
+import {
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, Legend,
+} from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useUsers, useVacantesAdmin, usePostulaciones } from "@/lib/queries";
 
-const trendData = [
-  { mes: "Ene", contrataciones: 12, postulaciones: 240 },
-  { mes: "Feb", contrataciones: 18, postulaciones: 320 },
-  { mes: "Mar", contrataciones: 22, postulaciones: 410 },
-  { mes: "Abr", contrataciones: 28, postulaciones: 480 },
-  { mes: "May", contrataciones: 35, postulaciones: 560 },
-  { mes: "Jun", contrataciones: 41, postulaciones: 640 },
-];
-const areaData = [
-  { dia: "L", v: 32 }, { dia: "M", v: 41 }, { dia: "X", v: 38 },
-  { dia: "J", v: 56 }, { dia: "V", v: 61 }, { dia: "S", v: 24 }, { dia: "D", v: 18 },
-];
+function buildTrend(items: { createdAt: string }[]) {
+  const days = Array.from({ length: 14 }).map((_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (13 - i));
+    return { d: `${d.getDate()}/${d.getMonth() + 1}`, key: d.toISOString().slice(0, 10), v: 0 };
+  });
+  for (const it of items) {
+    const k = new Date(it.createdAt).toISOString().slice(0, 10);
+    const day = days.find((x) => x.key === k);
+    if (day) day.v += 1;
+  }
+  return days;
+}
 
 export function SuperAdminDashboard({ name }: { name: string }) {
+  const usersQ = useUsers();
+  const vacQ = useVacantesAdmin();
+  const postQ = usePostulaciones();
+
+  if (usersQ.isLoading || vacQ.isLoading || postQ.isLoading) {
+    return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+
+  const users = usersQ.data ?? [];
+  const vac = vacQ.data ?? [];
+  const post = postQ.data ?? [];
+  const activas = vac.filter((v) => v.estado === "abierta" && v.publicada).length;
+  const trend = buildTrend(post);
+  const byRole = ["super_admin", "rrhh", "evaluador", "candidato"].map((r) => ({
+    r, v: users.filter((u) => u.role === r).length,
+  }));
+
   return (
     <div>
       <PageHeader
         title={`Hola, ${name} 👋`}
-        subtitle="Vista ejecutiva — métricas globales del sistema"
+        subtitle="Vista ejecutiva — datos reales del sistema"
         accent="from-violet-500 via-indigo-500 to-blue-500"
       />
       <div className="space-y-6 p-6 md:p-10">
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard label="Usuarios totales" value="1,284" delta="+12% vs mes anterior" icon={Users} tone="primary" />
-          <StatCard label="Vacantes activas" value="47" delta="+8 nuevas" icon={Briefcase} tone="accent" />
-          <StatCard label="Cumplimiento RLS" value="100%" icon={ShieldCheck} tone="success" />
-          <StatCard label="Uptime" value="99.98%" icon={Server} tone="warning" />
+          <StatCard label="Usuarios" value={String(users.length)} icon={Users} tone="primary" />
+          <StatCard label="Vacantes activas" value={String(activas)} icon={Briefcase} tone="accent" />
+          <StatCard label="Postulaciones" value={String(post.length)} icon={FileText} tone="warning" />
+          <StatCard label="Contratados" value={String(post.filter((p) => p.estado === "contratada").length)} icon={ShieldCheck} tone="success" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <Section title="Tendencia de reclutamiento (6 meses)">
+            <Section title="Postulaciones (últimos 14 días)" action={
+              <Button asChild size="sm" variant="outline"><Link to="/reportes">Ver reportes</Link></Button>
+            }>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={trendData}>
+                <ResponsiveContainer>
+                  <AreaChart data={trend}>
                     <defs>
-                      <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="oklch(0.62 0.18 240)" stopOpacity={0.5} />
-                        <stop offset="100%" stopColor="oklch(0.62 0.18 240)" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="oklch(0.72 0.15 200)" stopOpacity={0.5} />
-                        <stop offset="100%" stopColor="oklch(0.72 0.15 200)" stopOpacity={0} />
+                      <linearGradient id="gAdmin" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.5} />
+                        <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="mes" stroke="currentColor" fontSize={12} />
-                    <YAxis stroke="currentColor" fontSize={12} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                    <Legend />
-                    <Area type="monotone" dataKey="postulaciones" stroke="oklch(0.62 0.18 240)" fill="url(#grad1)" />
-                    <Area type="monotone" dataKey="contrataciones" stroke="oklch(0.72 0.15 200)" fill="url(#grad2)" />
+                    <XAxis dataKey="d" fontSize={12} /><YAxis allowDecimals={false} fontSize={12} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="v" stroke="#8b5cf6" fill="url(#gAdmin)" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </Section>
           </div>
-          <Section title="Actividad de la semana">
+          <Section title="Usuarios por rol">
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={areaData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis dataKey="dia" stroke="currentColor" fontSize={12} />
-                  <YAxis stroke="currentColor" fontSize={12} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Bar dataKey="v" fill="oklch(0.42 0.16 260)" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <ResponsiveContainer><BarChart data={byRole}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="r" fontSize={11} /><YAxis allowDecimals={false} fontSize={12} />
+                <Tooltip /><Bar dataKey="v" fill="#6366f1" radius={[8, 8, 0, 0]} />
+              </BarChart></ResponsiveContainer>
             </div>
           </Section>
         </div>
 
-        <Section title="Eventos recientes" action={<Badge variant="outline">Últimas 24h</Badge>}>
+        <Section title="Usuarios recientes" action={<Badge variant="outline">Últimos 5</Badge>}>
           <ul className="divide-y">
-            {[
-              { t: "Nuevo administrador RRHH registrado", time: "hace 12 min", tone: "bg-primary/10 text-primary" },
-              { t: "Vacante 'Senior Backend' publicada", time: "hace 1 h", tone: "bg-accent/15 text-accent" },
-              { t: "12 candidatos completaron prueba técnica", time: "hace 3 h", tone: "bg-success/15 text-success" },
-              { t: "Reporte mensual generado", time: "hace 8 h", tone: "bg-warning/20 text-warning" },
-            ].map((e, i) => (
-              <li key={i} className="flex items-center gap-3 py-3">
-                <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${e.tone}`}>
+            {users.slice(0, 5).map((u) => (
+              <li key={u.id} className="flex items-center gap-3 py-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Activity className="h-4 w-4" />
                 </span>
-                <span className="flex-1 text-sm">{e.t}</span>
-                <span className="text-xs text-muted-foreground">{e.time}</span>
+                <span className="flex-1 text-sm"><b>{u.fullName}</b> — {u.role}</span>
+                <span className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString()}</span>
               </li>
             ))}
           </ul>

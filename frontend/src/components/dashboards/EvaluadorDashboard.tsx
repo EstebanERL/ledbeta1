@@ -1,89 +1,91 @@
 import { PageHeader, StatCard, Section } from "./shared";
-import { Brain, FileText, CheckCircle2, ClipboardList } from "lucide-react";
-import { ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { Brain, FileText, CheckCircle2, ClipboardList, Loader2 } from "lucide-react";
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend,
+} from "recharts";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { usePostulaciones, estadoColor } from "@/lib/queries";
 
-const radarData = [
-  { skill: "Lógica", A: 82 },
-  { skill: "Comunicación", A: 74 },
-  { skill: "Liderazgo", A: 68 },
-  { skill: "Análisis", A: 88 },
-  { skill: "Creatividad", A: 71 },
-  { skill: "Trabajo en equipo", A: 79 },
-];
-const scores = [
-  { name: "M. Pérez", score: 92 }, { name: "L. Gómez", score: 86 },
-  { name: "A. Ríos", score: 78 }, { name: "C. Díaz", score: 71 },
-  { name: "J. Vega", score: 64 },
-];
+const COLORS = ["#10b981", "#06b6d4", "#8b5cf6", "#f59e0b", "#ef4444", "#22d3ee"];
 
 export function EvaluadorDashboard({ name }: { name: string }) {
+  const { data, isLoading } = usePostulaciones();
+  if (isLoading) return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+
+  const post = data ?? [];
+  const pendientes = post.filter((p) => ["en_revision", "evaluacion", "entrevista"].includes(p.estado));
+  const calif = post.filter((p) => ["rechazada", "contratada"].includes(p.estado));
+
+  const byEstado = ["enviada", "en_revision", "evaluacion", "entrevista", "rechazada", "contratada"].map((e, i) => ({
+    name: e, value: post.filter((p) => p.estado === e).length, color: COLORS[i],
+  })).filter((d) => d.value > 0);
+
+  const byDepto = Object.entries(
+    post.reduce<Record<string, number>>((a, p) => { a[p.departamento] = (a[p.departamento] || 0) + 1; return a; }, {}),
+  ).map(([name, value]) => ({ name, value })).slice(0, 8);
+
   return (
     <div>
       <PageHeader
         title={`Hola, ${name}`}
-        subtitle="Evaluaciones, pruebas técnicas y resultados psicológicos"
+        subtitle="Evaluaciones, pruebas y resultados"
         accent="from-emerald-500 via-teal-500 to-cyan-500"
       />
       <div className="space-y-6 p-6 md:p-10">
         <div className="grid gap-4 md:grid-cols-4">
-          <StatCard label="Evaluaciones pendientes" value="9" icon={ClipboardList} tone="warning" />
-          <StatCard label="Pruebas calificadas" value="142" delta="+24 esta semana" icon={CheckCircle2} tone="success" />
-          <StatCard label="Test psicotécnicos" value="58" icon={Brain} tone="primary" />
-          <StatCard label="Reportes generados" value="31" icon={FileText} tone="accent" />
+          <StatCard label="Pendientes" value={String(pendientes.length)} icon={ClipboardList} tone="warning" />
+          <StatCard label="Calificadas" value={String(calif.length)} icon={CheckCircle2} tone="success" />
+          <StatCard label="Total candidatos" value={String(post.length)} icon={Brain} tone="primary" />
+          <StatCard label="Contratados" value={String(post.filter((p) => p.estado === "contratada").length)} icon={FileText} tone="accent" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <Section title="Perfil promedio de candidatos">
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadarChart data={radarData}>
-                  <PolarGrid strokeOpacity={0.3} />
-                  <PolarAngleAxis dataKey="skill" tick={{ fontSize: 12 }} />
-                  <PolarRadiusAxis angle={90} domain={[0, 100]} tick={{ fontSize: 10 }} />
-                  <Radar dataKey="A" stroke="oklch(0.62 0.16 155)" fill="oklch(0.62 0.16 155)" fillOpacity={0.4} />
-                </RadarChart>
-              </ResponsiveContainer>
+          <Section title="Distribución por estado">
+            <div className="h-72">
+              {byEstado.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sin datos</div>
+              ) : (
+                <ResponsiveContainer><PieChart>
+                  <Pie data={byEstado} dataKey="value" nameKey="name" innerRadius={45} outerRadius={90}>
+                    {byEstado.map((d) => <Cell key={d.name} fill={d.color} />)}
+                  </Pie>
+                  <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart></ResponsiveContainer>
+              )}
             </div>
           </Section>
-          <Section title="Top candidatos por puntaje">
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={scores} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                  <XAxis type="number" stroke="currentColor" fontSize={12} domain={[0, 100]} />
-                  <YAxis dataKey="name" type="category" stroke="currentColor" fontSize={12} width={80} />
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Bar dataKey="score" fill="oklch(0.72 0.15 200)" radius={[0, 8, 8, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <Section title="Candidatos por departamento">
+            <div className="h-72">
+              <ResponsiveContainer><BarChart data={byDepto} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis type="number" fontSize={12} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" fontSize={12} width={120} />
+                <Tooltip /><Bar dataKey="value" fill="#10b981" radius={[0, 8, 8, 0]} />
+              </BarChart></ResponsiveContainer>
             </div>
           </Section>
         </div>
 
-        <Section title="Cola de evaluaciones">
-          <ul className="space-y-3">
-            {[
-              { c: "Mariana Pérez", v: "Senior Backend", p: 80, t: "Prueba técnica" },
-              { c: "Luis Gómez", v: "Diseñador UX", p: 60, t: "Test psicotécnico" },
-              { c: "Ana Ríos", v: "Analista Financiero", p: 35, t: "Prueba técnica" },
-            ].map((e, i) => (
-              <li key={i} className="rounded-lg border p-4 transition hover:bg-muted/40">
-                <div className="flex items-center justify-between">
+        <Section title="Cola de evaluaciones" action={
+          <Button asChild size="sm" className="bg-gradient-primary"><Link to="/evaluaciones">Ir a evaluaciones</Link></Button>
+        }>
+          {pendientes.length === 0 ? (
+            <div className="py-6 text-center text-sm text-muted-foreground">Sin evaluaciones pendientes</div>
+          ) : (
+            <ul className="space-y-2">
+              {pendientes.slice(0, 5).map((p) => (
+                <li key={p.id} className="flex items-center justify-between rounded-lg border p-3">
                   <div>
-                    <div className="font-medium">{e.c}</div>
-                    <div className="text-xs text-muted-foreground">{e.v}</div>
+                    <div className="font-medium text-sm">{p.candidatoNombre}</div>
+                    <div className="text-xs text-muted-foreground">{p.vacanteTitulo}</div>
                   </div>
-                  <Badge variant="outline">{e.t}</Badge>
-                </div>
-                <div className="mt-3 flex items-center gap-3">
-                  <Progress value={e.p} className="h-2" />
-                  <span className="text-xs font-medium tabular-nums">{e.p}%</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+                  <Badge variant="outline" className={estadoColor(p.estado)}>{p.estado}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
       </div>
     </div>
