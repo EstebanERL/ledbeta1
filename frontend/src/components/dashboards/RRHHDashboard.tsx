@@ -1,22 +1,40 @@
 import { PageHeader, StatCard, Section } from "./shared";
-import { Briefcase, Users, Clock, TrendingUp, Plus } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
+import { Briefcase, Users, Clock, TrendingUp, Plus, Loader2 } from "lucide-react";
+import {
+  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  PieChart, Pie, Cell, Legend,
+} from "recharts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { useVacantesAdmin, usePostulaciones, estadoColor } from "@/lib/queries";
 
-const pipeline = [
-  { name: "Nuevos", value: 124, color: "oklch(0.62 0.18 240)" },
-  { name: "En revisión", value: 78, color: "oklch(0.72 0.15 200)" },
-  { name: "Pruebas", value: 42, color: "oklch(0.78 0.16 75)" },
-  { name: "Entrevista", value: 21, color: "oklch(0.55 0.18 290)" },
-  { name: "Contratados", value: 9, color: "oklch(0.62 0.16 155)" },
-];
-
-const trend = Array.from({ length: 14 }).map((_, i) => ({
-  d: `${i + 1}`, postulaciones: 10 + Math.round(Math.sin(i / 2) * 8 + i * 2),
-}));
+const PIE_COLORS = ["#6366f1", "#06b6d4", "#8b5cf6", "#0ea5e9", "#ef4444", "#10b981"];
 
 export function RRHHDashboard({ name }: { name: string }) {
+  const vacQ = useVacantesAdmin();
+  const postQ = usePostulaciones();
+
+  if (vacQ.isLoading || postQ.isLoading) {
+    return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+  const vac = vacQ.data ?? [];
+  const post = postQ.data ?? [];
+  const activas = vac.filter((v) => v.estado === "abierta").length;
+
+  const trend = Array.from({ length: 14 }).map((_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (13 - i));
+    const k = d.toISOString().slice(0, 10);
+    return {
+      d: `${d.getDate()}/${d.getMonth() + 1}`,
+      postulaciones: post.filter((p) => p.createdAt.slice(0, 10) === k).length,
+    };
+  });
+  const pipeline = ["enviada", "en_revision", "evaluacion", "entrevista", "contratada"].map((e, i) => ({
+    name: e, value: post.filter((p) => p.estado === e).length, color: PIE_COLORS[i],
+  })).filter((d) => d.value > 0);
+  const tasaConv = post.length ? Math.round((post.filter((p) => p.estado === "contratada").length / post.length) * 1000) / 10 : 0;
+
   return (
     <div>
       <PageHeader
@@ -25,73 +43,74 @@ export function RRHHDashboard({ name }: { name: string }) {
         accent="from-blue-500 via-cyan-500 to-teal-500"
       />
       <div className="space-y-6 p-6 md:p-10">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="grid flex-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="Vacantes activas" value="14" delta="+3 esta semana" icon={Briefcase} tone="primary" />
-            <StatCard label="Candidatos en pipeline" value="274" delta="+18%" icon={Users} tone="accent" />
-            <StatCard label="Tiempo promedio de hire" value="18 días" delta="-4 días" icon={Clock} tone="success" />
-            <StatCard label="Tasa de conversión" value="7.3%" delta="+0.8%" icon={TrendingUp} tone="warning" />
-          </div>
+        <div className="grid gap-4 md:grid-cols-4">
+          <StatCard label="Vacantes activas" value={String(activas)} icon={Briefcase} tone="primary" />
+          <StatCard label="Candidatos" value={String(post.length)} icon={Users} tone="accent" />
+          <StatCard label="En entrevista" value={String(post.filter((p) => p.estado === "entrevista").length)} icon={Clock} tone="warning" />
+          <StatCard label="Tasa conversión" value={`${tasaConv}%`} icon={TrendingUp} tone="success" />
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <Section title="Postulaciones (últimos 14 días)" action={<Button size="sm" className="bg-gradient-primary"><Plus className="mr-1 h-4 w-4" /> Nueva vacante</Button>}>
+            <Section title="Postulaciones (últimos 14 días)" action={
+              <Button asChild size="sm" className="bg-gradient-primary"><Link to="/vacantes"><Plus className="mr-1 h-4 w-4" /> Nueva vacante</Link></Button>
+            }>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer>
                   <LineChart data={trend}>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="d" stroke="currentColor" fontSize={12} />
-                    <YAxis stroke="currentColor" fontSize={12} />
-                    <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                    <Line type="monotone" dataKey="postulaciones" stroke="oklch(0.42 0.16 260)" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                    <XAxis dataKey="d" fontSize={12} /><YAxis fontSize={12} allowDecimals={false} />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="postulaciones" stroke="#06b6d4" strokeWidth={3} dot={{ r: 3 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </Section>
           </div>
-          <Section title="Embudo del pipeline">
+          <Section title="Pipeline">
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pipeline} dataKey="value" innerRadius={50} outerRadius={90} paddingAngle={3}>
+              {pipeline.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sin postulaciones</div>
+              ) : (
+                <ResponsiveContainer><PieChart>
+                  <Pie data={pipeline} dataKey="value" innerRadius={45} outerRadius={85} paddingAngle={3}>
                     {pipeline.map((p) => <Cell key={p.name} fill={p.color} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
+                  <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
+                </PieChart></ResponsiveContainer>
+              )}
             </div>
           </Section>
         </div>
 
-        <Section title="Vacantes recientes" action={<Button size="sm" variant="outline">Ver todas</Button>}>
+        <Section title="Vacantes recientes" action={
+          <Button asChild size="sm" variant="outline"><Link to="/vacantes">Ver todas</Link></Button>
+        }>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="text-xs uppercase text-muted-foreground">
-                <tr className="border-b">
-                  <th className="px-3 py-2 text-left">Cargo</th>
-                  <th className="px-3 py-2 text-left">Área</th>
-                  <th className="px-3 py-2 text-left">Modalidad</th>
-                  <th className="px-3 py-2 text-left">Postulantes</th>
-                  <th className="px-3 py-2 text-left">Estado</th>
-                </tr>
-              </thead>
+              <thead className="text-xs uppercase text-muted-foreground"><tr className="border-b">
+                <th className="px-3 py-2 text-left">Cargo</th>
+                <th className="px-3 py-2 text-left">Departamento</th>
+                <th className="px-3 py-2 text-left">Modalidad</th>
+                <th className="px-3 py-2 text-left">Postulantes</th>
+                <th className="px-3 py-2 text-left">Estado</th>
+              </tr></thead>
               <tbody>
-                {[
-                  { c: "Senior Backend Engineer", a: "Tecnología", m: "Remoto", p: 47, s: "Activa", t: "bg-success/15 text-success" },
-                  { c: "Diseñador UX/UI", a: "Producto", m: "Híbrido", p: 32, s: "Activa", t: "bg-success/15 text-success" },
-                  { c: "Analista Financiero", a: "Finanzas", m: "Presencial", p: 21, s: "En revisión", t: "bg-warning/20 text-warning" },
-                  { c: "Especialista Marketing", a: "Marketing", m: "Remoto", p: 18, s: "Pausada", t: "bg-muted text-muted-foreground" },
-                ].map((r, i) => (
-                  <tr key={i} className="border-b last:border-0 hover:bg-muted/40">
-                    <td className="px-3 py-3 font-medium">{r.c}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{r.a}</td>
-                    <td className="px-3 py-3 text-muted-foreground">{r.m}</td>
-                    <td className="px-3 py-3">{r.p}</td>
-                    <td className="px-3 py-3"><Badge className={r.t}>{r.s}</Badge></td>
-                  </tr>
-                ))}
+                {vac.slice(0, 6).map((v) => {
+                  const cnt = post.filter((p) => p.vacanteId === v.id).length;
+                  return (
+                    <tr key={v.id} className="border-b last:border-0 hover:bg-muted/40">
+                      <td className="px-3 py-3 font-medium">{v.titulo}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{v.departamento}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{v.modalidad}</td>
+                      <td className="px-3 py-3">{cnt}</td>
+                      <td className="px-3 py-3"><Badge variant="outline" className={estadoColor(v.estado)}>{v.estado}</Badge></td>
+                    </tr>
+                  );
+                })}
+                {vac.length === 0 && (
+                  <tr><td colSpan={5} className="py-6 text-center text-muted-foreground">Sin vacantes aún</td></tr>
+                )}
               </tbody>
             </table>
           </div>
