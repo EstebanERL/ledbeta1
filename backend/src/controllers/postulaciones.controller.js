@@ -1,6 +1,27 @@
 import { v4 as uuid } from 'uuid';
 import { query, queryOne } from '../config/db.js';
 
+export async function listAll(req, res, next) {
+  try {
+    const { estado } = req.query;
+    const where = [];
+    const params = [];
+    if (estado) { where.push('p.estado = ?'); params.push(String(estado)); }
+    const sql = `
+      SELECT p.id, p.estado, p.cv_url AS cvUrl, p.notas, p.created_at AS createdAt,
+             v.id AS vacanteId, v.titulo AS vacanteTitulo, v.departamento, v.modalidad,
+             u.id AS candidatoId, u.full_name AS candidatoNombre, u.email AS candidatoEmail
+        FROM postulaciones p
+        JOIN vacantes v ON v.id = p.vacante_id
+        JOIN users u    ON u.id = p.candidato_id
+       ${where.length ? 'WHERE ' + where.join(' AND ') : ''}
+       ORDER BY p.created_at DESC
+       LIMIT 500`;
+    const rows = await query(sql, params);
+    res.json({ items: rows });
+  } catch (e) { next(e); }
+}
+
 export async function applyToVacante(req, res, next) {
   try {
     const { vacanteId } = req.body;
