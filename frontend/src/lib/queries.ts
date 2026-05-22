@@ -4,6 +4,8 @@ import { api } from "./api";
 export type AdminUser = {
   id: string; email: string; fullName: string;
   role: "super_admin" | "rrhh" | "evaluador" | "candidato";
+  avatarUrl?: string | null;
+  isActive?: boolean;
   createdAt: string;
 };
 
@@ -23,6 +25,28 @@ export type Postulacion = {
 export type MyPostulacion = {
   id: string; estado: string; cvUrl?: string | null; createdAt: string;
   vacanteId: string; titulo: string; departamento: string; modalidad: string; vacanteEstado: string;
+};
+
+export type ExperienceItem = { company: string; role: string; from?: string; to?: string; description?: string };
+export type EducationItem = { institution: string; degree: string; from?: string; to?: string };
+
+export type UserProfile = {
+  id: string; email: string; fullName: string;
+  role: AdminUser["role"];
+  avatarUrl?: string | null;
+  phone?: string | null;
+  location?: string | null;
+  headline?: string | null;
+  bio?: string | null;
+  linkedinUrl?: string | null;
+  githubUrl?: string | null;
+  websiteUrl?: string | null;
+  cvUrl?: string | null;
+  skills?: string[] | null;
+  experience?: ExperienceItem[] | null;
+  education?: EducationItem[] | null;
+  isActive?: boolean;
+  createdAt: string;
 };
 
 export function useUsers() {
@@ -63,9 +87,42 @@ export function useMyPostulaciones(enabled = true) {
   });
 }
 
+export function useMyProfile(enabled = true) {
+  return useQuery({
+    enabled,
+    queryKey: ["profile", "me"],
+    queryFn: async () => (await api.get<{ user: UserProfile }>("/users/me")).data.user,
+  });
+}
+
+export function useUserProfile(id: string | null) {
+  return useQuery({
+    enabled: !!id,
+    queryKey: ["profile", id],
+    queryFn: async () => (await api.get<{ user: UserProfile }>(`/users/${id}`)).data.user,
+  });
+}
+
+/** Convierte una ruta del backend (`/uploads/...`) en URL absoluta consumible por el navegador. */
+export function fileUrl(p?: string | null): string | undefined {
+  if (!p) return undefined;
+  if (/^https?:\/\//i.test(p)) return p;
+  const base = (import.meta.env.VITE_API_URL || "http://localhost:4000/api").replace(/\/api\/?$/, "");
+  return `${base}${p.startsWith("/") ? "" : "/"}${p}`;
+}
+
 export const ESTADOS_POSTULACION = [
   "enviada", "en_revision", "evaluacion", "entrevista", "rechazada", "contratada",
 ] as const;
+
+export const ESTADO_LABEL: Record<string, string> = {
+  enviada: "Enviada",
+  en_revision: "En revisión",
+  evaluacion: "Evaluación",
+  entrevista: "Entrevista",
+  rechazada: "Rechazada",
+  contratada: "Contratada",
+};
 
 export function estadoColor(estado: string): string {
   const map: Record<string, string> = {
