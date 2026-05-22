@@ -24,6 +24,18 @@ CREATE TABLE users (
   avatar_url     VARCHAR(500)   NULL,
   role           ENUM('super_admin','rrhh','evaluador','candidato')
                                 NOT NULL DEFAULT 'candidato',
+  phone          VARCHAR(40)    NULL,
+  location       VARCHAR(150)   NULL,
+  headline       VARCHAR(180)   NULL,
+  bio            TEXT           NULL,
+  linkedin_url   VARCHAR(300)   NULL,
+  github_url     VARCHAR(300)   NULL,
+  website_url    VARCHAR(300)   NULL,
+  cv_url         VARCHAR(500)   NULL,
+  skills         JSON           NULL,
+  experience     JSON           NULL,
+  education      JSON           NULL,
+  is_active      TINYINT(1)     NOT NULL DEFAULT 1,
   created_at     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP
                                 ON UPDATE CURRENT_TIMESTAMP,

@@ -8,7 +8,6 @@ const registerSchema = z.object({
   email: z.string().email().max(255),
   password: z.string().min(8).max(72),
   fullName: z.string().min(2).max(100),
-  role: z.enum(['candidato', 'rrhh', 'evaluador']).default('candidato'),
 });
 
 const loginSchema = z.object({
@@ -35,10 +34,12 @@ export async function register(req, res, next) {
 
     const passwordHash = await bcrypt.hash(data.password, 10);
     const id = uuid();
+    // Registro público: SIEMPRE rol candidato.
+    // Roles administrativos sólo se crean desde el panel del Super Administrador.
     await query(
       `INSERT INTO users (id, email, password_hash, full_name, role)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id, data.email, passwordHash, data.fullName, data.role],
+       VALUES (?, ?, ?, ?, 'candidato')`,
+      [id, data.email, passwordHash, data.fullName],
     );
     const user = mapUser(await queryOne('SELECT * FROM users WHERE id = ?', [id]));
     const token = signToken({ id: user.id, email: user.email, role: user.role });

@@ -15,7 +15,7 @@ interface AuthState {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; fullName: string; role: AppRole }) => Promise<void>;
+  register: (data: { email: string; password: string; fullName: string }) => Promise<void>;
   signOut: () => void;
   refresh: () => Promise<void>;
 }
