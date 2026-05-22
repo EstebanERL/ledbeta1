@@ -5,16 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, UserPlus, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
-import { useAuth, type AppRole } from "@/lib/auth";
-
-const SELECTABLE_ROLES: { value: Exclude<AppRole, "super_admin">; label: string; desc: string }[] = [
-  { value: "candidato", label: "Aspirante / Candidato", desc: "Quiero postular a vacantes" },
-  { value: "rrhh", label: "Administrador RRHH", desc: "Gestiono vacantes y candidatos" },
-  { value: "evaluador", label: "Evaluador / Psicólogo", desc: "Realizo evaluaciones" },
-];
+import { useAuth } from "@/lib/auth";
 
 export default function AuthPage() {
   const [params] = useSearchParams();
@@ -36,13 +29,17 @@ export default function AuthPage() {
           </div>
           <span className="text-lg font-semibold">TalentForge</span>
         </Link>
-        <div className="relative">
+        <div className="relative space-y-6">
           <h2 className="text-3xl font-bold leading-tight">
-            Bienvenido al sistema de gestión de talento.
+            Crea tu perfil profesional y postula a las mejores vacantes.
           </h2>
-          <p className="mt-4 text-white/75">
+          <p className="text-white/75">
             Reclutamiento, evaluaciones, pruebas técnicas y reportes en un panel seguro.
           </p>
+          <div className="rounded-xl border border-white/10 bg-white/5 p-4 text-sm text-white/80">
+            <ShieldCheck className="mb-2 h-5 w-5 text-white" />
+            Los accesos administrativos (RRHH, Evaluador, Super Admin) sólo se crean desde el panel del Super Administrador.
+          </div>
         </div>
         <div className="relative text-xs text-white/50">© {new Date().getFullYear()} TalentForge</div>
       </div>
@@ -106,10 +103,9 @@ function LoginForm() {
 }
 
 const registerSchema = z.object({
-  fullName: z.string().trim().min(2).max(100),
-  email: z.string().trim().email().max(255),
-  password: z.string().min(8).max(72),
-  role: z.enum(["candidato", "rrhh", "evaluador"]),
+  fullName: z.string().trim().min(2, "Nombre muy corto").max(100),
+  email: z.string().trim().email("Correo inválido").max(255),
+  password: z.string().min(8, "Mínimo 8 caracteres").max(72),
 });
 
 function RegisterForm() {
@@ -118,17 +114,16 @@ function RegisterForm() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"candidato" | "rrhh" | "evaluador">("candidato");
   const [busy, setBusy] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const parsed = registerSchema.safeParse({ fullName, email, password, role });
+    const parsed = registerSchema.safeParse({ fullName, email, password });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     setBusy(true);
     try {
       await register(parsed.data);
-      toast.success("¡Cuenta creada!");
+      toast.success("¡Cuenta de candidato creada!");
       navigate("/dashboard");
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? "Error al crear cuenta");
@@ -139,8 +134,18 @@ function RegisterForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">Crear cuenta</h1>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold">Crear cuenta como candidato</h1>
+        <p className="text-sm text-muted-foreground">
+          Postula a vacantes, sube tu CV y haz seguimiento a tu proceso.
+        </p>
+      </div>
+      <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs">
+        <UserPlus className="mt-0.5 h-4 w-4 text-primary" />
+        <span>
+          El registro público es <b>exclusivo para aspirantes</b>. Los roles administrativos
+          (RRHH, Evaluador, Super Admin) sólo se crean desde el panel del Super Administrador.
+        </span>
       </div>
       <div className="space-y-2">
         <Label>Nombre completo</Label>
@@ -154,22 +159,8 @@ function RegisterForm() {
         <Label>Contraseña</Label>
         <Input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
       </div>
-      <div className="space-y-2">
-        <Label>Tipo de cuenta</Label>
-        <RadioGroup value={role} onValueChange={(v) => setRole(v as typeof role)} className="grid gap-2">
-          {SELECTABLE_ROLES.map((r) => (
-            <label key={r.value} htmlFor={`role-${r.value}`} className="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition hover:border-primary has-[:checked]:border-primary has-[:checked]:bg-primary/5">
-              <RadioGroupItem value={r.value} id={`role-${r.value}`} className="mt-0.5" />
-              <div>
-                <div className="text-sm font-medium">{r.label}</div>
-                <div className="text-xs text-muted-foreground">{r.desc}</div>
-              </div>
-            </label>
-          ))}
-        </RadioGroup>
-      </div>
       <Button type="submit" disabled={busy} className="w-full bg-gradient-primary shadow-glow">
-        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Crear cuenta"}
+        {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Crear cuenta de candidato"}
       </Button>
     </form>
   );
