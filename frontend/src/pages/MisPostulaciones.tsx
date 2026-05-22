@@ -1,4 +1,4 @@
-import { useMyPostulaciones, estadoColor } from "@/lib/queries";
+import { useMyPostulaciones, estadoColor, ESTADO_LABEL } from "@/lib/queries";
 import { PageHeader, StatCard, Section } from "@/components/dashboards/shared";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
@@ -47,7 +47,7 @@ export default function MisPostulacionesPage() {
                       {p.departamento} · {p.modalidad} · {new Date(p.createdAt).toLocaleDateString()}
                     </div>
                   </div>
-                  <Badge variant="outline" className={estadoColor(p.estado)}>{p.estado}</Badge>
+                  <Badge variant="outline" className={estadoColor(p.estado)}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
                 </li>
               ))}
             </ul>
