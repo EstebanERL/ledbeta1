@@ -18,7 +18,7 @@ const conn = await mysql.createConnection({
   password: process.env.DB_PASSWORD || '',
   database: dbName,
   multipleStatements: true,
-  ...(useSSL ? { ssl: { rejectUnauthorized: true } } : {}),
+  ...(useSSL ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 await conn.query(sql);
