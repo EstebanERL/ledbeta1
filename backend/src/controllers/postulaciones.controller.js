@@ -26,19 +26,29 @@ export async function applyToVacante(req, res, next) {
   try {
     const { vacanteId } = req.body;
     if (!vacanteId) return res.status(400).json({ error: 'vacanteId requerido' });
-    const cvUrl = req.file ? `/uploads/${req.file.filename}` : null;
+
+    const vac = await queryOne(
+      `SELECT id, estado, publicada FROM vacantes WHERE id = ?`,
+      [vacanteId],
+    );
+    if (!vac) return res.status(404).json({ error: 'Vacante no encontrada' });
+    if (vac.estado !== 'abierta' || !vac.publicada) {
+      return res.status(400).json({ error: 'La vacante no está abierta para postulaciones' });
+    }
 
     const existing = await queryOne(
       'SELECT id FROM postulaciones WHERE vacante_id = ? AND candidato_id = ?',
       [vacanteId, req.user.id],
     );
-
     if (existing) {
-      if (cvUrl) {
-        await query('UPDATE postulaciones SET cv_url = ? WHERE id = ?', [cvUrl, existing.id]);
-      }
-      const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [existing.id]);
-      return res.json({ postulacion: post });
+      return res.status(409).json({ error: 'Ya te postulaste a esta vacante' });
+    }
+
+    // CV: el subido en esta petición, o el del perfil si no se adjuntó nada.
+    let cvUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    if (!cvUrl) {
+      const u = await queryOne('SELECT cv_url FROM users WHERE id = ?', [req.user.id]);
+      cvUrl = u?.cv_url || null;
     }
 
     const id = uuid();
