@@ -1,5 +1,13 @@
 import { v4 as uuid } from 'uuid';
 import { query, queryOne } from '../config/db.js';
+import { registrarEvento } from './eventos.controller.js';
+import { autoCierreVacante } from './vacantes.controller.js';
+
+const ESTADOS = [
+  'enviada', 'en_revision', 'evaluacion', 'test_asignado',
+  'entrevista', 'entrevista_pendiente', 'entrevista_realizada',
+  'aprobado', 'rechazada', 'contratada',
+];
 
 export async function listAll(req, res, next) {
   try {
@@ -10,7 +18,8 @@ export async function listAll(req, res, next) {
     const sql = `
       SELECT p.id, p.estado, p.cv_url AS cvUrl, p.notas, p.created_at AS createdAt,
              v.id AS vacanteId, v.titulo AS vacanteTitulo, v.departamento, v.modalidad,
-             u.id AS candidatoId, u.full_name AS candidatoNombre, u.email AS candidatoEmail
+             u.id AS candidatoId, u.full_name AS candidatoNombre, u.email AS candidatoEmail,
+             u.avatar_url AS candidatoAvatar
         FROM postulaciones p
         JOIN vacantes v ON v.id = p.vacante_id
         JOIN users u    ON u.id = p.candidato_id
@@ -40,11 +49,8 @@ export async function applyToVacante(req, res, next) {
       'SELECT id FROM postulaciones WHERE vacante_id = ? AND candidato_id = ?',
       [vacanteId, req.user.id],
     );
-    if (existing) {
-      return res.status(409).json({ error: 'Ya te postulaste a esta vacante' });
-    }
+    if (existing) return res.status(409).json({ error: 'Ya te postulaste a esta vacante' });
 
-    // CV: el subido en esta petición, o el del perfil si no se adjuntó nada.
     let cvUrl = req.file ? `/uploads/${req.file.filename}` : null;
     if (!cvUrl) {
       const u = await queryOne('SELECT cv_url FROM users WHERE id = ?', [req.user.id]);
@@ -57,6 +63,11 @@ export async function applyToVacante(req, res, next) {
        VALUES (?, ?, ?, ?)`,
       [id, vacanteId, req.user.id, cvUrl],
     );
+    await registrarEvento({
+      postulacionId: id, estado: 'enviada', tipo: 'estado',
+      nota: 'Postulación enviada por el candidato',
+      autorId: req.user.id, autorRol: req.user.role,
+    });
     const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [id]);
     res.status(201).json({ postulacion: post });
   } catch (e) { next(e); }
@@ -95,19 +106,29 @@ export async function listForVacante(req, res, next) {
 export async function updateEstado(req, res, next) {
   try {
     const { estado, notas } = req.body;
-    const allowed = ['enviada','en_revision','evaluacion','entrevista','rechazada','contratada'];
-    if (estado && !allowed.includes(estado)) {
-      return res.status(400).json({ error: 'Estado inválido' });
-    }
-    const sets = [];
-    const params = [];
+    if (estado && !ESTADOS.includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
+    const post = await queryOne('SELECT vacante_id, estado FROM postulaciones WHERE id = ?', [req.params.id]);
+    if (!post) return res.status(404).json({ error: 'Postulación no encontrada' });
+
+    const sets = []; const params = [];
     if (estado !== undefined) { sets.push('estado = ?'); params.push(estado); }
     if (notas !== undefined)  { sets.push('notas = ?');  params.push(notas); }
     if (sets.length === 0) return res.status(400).json({ error: 'No fields to update' });
     params.push(req.params.id);
-    const result = await query(`UPDATE postulaciones SET ${sets.join(', ')} WHERE id = ?`, params);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Postulación no encontrada' });
-    const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [req.params.id]);
-    res.json({ postulacion: post });
+    await query(`UPDATE postulaciones SET ${sets.join(', ')} WHERE id = ?`, params);
+
+    if (estado && estado !== post.estado) {
+      await registrarEvento({
+        postulacionId: req.params.id, estado, tipo: 'estado',
+        nota: notas || null,
+        autorId: req.user.id, autorRol: req.user.role,
+      });
+    }
+    // Auto-cierre si se contrató: cuenta contratados y cierra vacante si cubre cupos
+    if (estado === 'contratada') {
+      await autoCierreVacante(post.vacante_id);
+    }
+    const updated = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [req.params.id]);
+    res.json({ postulacion: updated });
   } catch (e) { next(e); }
 }

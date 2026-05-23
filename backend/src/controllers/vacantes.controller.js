@@ -40,6 +40,31 @@ function mapVacante(r) {
   return { ...r, publicada: !!r.publicada };
 }
 
+/** Si estado ∈ {cerrada,borrador} fuerza publicada=false. */
+function enforceVisibility(estado, publicada) {
+  if (estado === 'cerrada' || estado === 'borrador') return false;
+  return publicada;
+}
+
+/** Auto-cierra una vacante si ya cubrió todos los cupos contratados. */
+export async function autoCierreVacante(vacanteId) {
+  const v = await queryOne(
+    'SELECT id, vacantes_disponibles AS cupos, estado FROM vacantes WHERE id = ?',
+    [vacanteId],
+  );
+  if (!v) return;
+  const row = await queryOne(
+    `SELECT COUNT(*) AS n FROM postulaciones WHERE vacante_id = ? AND estado = 'contratada'`,
+    [vacanteId],
+  );
+  if (Number(row.n) >= Number(v.cupos) && v.estado !== 'cerrada') {
+    await query(
+      `UPDATE vacantes SET estado = 'cerrada', publicada = 0 WHERE id = ?`,
+      [vacanteId],
+    );
+  }
+}
+
 export async function listPublic(req, res, next) {
   try {
     const { departamento, modalidad, contrato, q } = req.query;
@@ -48,7 +73,7 @@ export async function listPublic(req, res, next) {
     if (departamento) { where.push('departamento = ?'); params.push(String(departamento)); }
     if (modalidad)    { where.push('modalidad = ?');    params.push(String(modalidad)); }
     if (contrato)     { where.push('tipo_contrato = ?'); params.push(String(contrato)); }
-    if (q)            { where.push('titulo LIKE ?');    params.push(`%${String(q)}%`); }
+    if (q)            { where.push('(titulo LIKE ? OR descripcion LIKE ?)'); params.push(`%${String(q)}%`, `%${String(q)}%`); }
 
     const rows = await query(
       `SELECT ${SELECT_COLS} FROM vacantes
@@ -58,6 +83,47 @@ export async function listPublic(req, res, next) {
       params,
     );
     res.json({ items: rows.map(mapVacante) });
+  } catch (e) { next(e); }
+}
+
+/** Recomendaciones dinámicas para el candidato autenticado. */
+export async function recomendadas(req, res, next) {
+  try {
+    const me = await queryOne(
+      'SELECT skills, headline, bio FROM users WHERE id = ?',
+      [req.user.id],
+    );
+    let skills = [];
+    try { skills = typeof me?.skills === 'string' ? JSON.parse(me.skills) : (me?.skills || []); } catch {}
+    const keywords = [
+      ...skills,
+      ...String(me?.headline || '').split(/[,\s]+/),
+    ].map((s) => String(s).trim().toLowerCase()).filter((s) => s.length > 2);
+
+    const rows = await query(
+      `SELECT ${SELECT_COLS} FROM vacantes
+       WHERE publicada = 1 AND estado = 'abierta'
+       ORDER BY fecha_publicacion DESC
+       LIMIT 80`,
+    );
+    // Excluir vacantes a las que ya se postuló
+    const postuladas = await query(
+      'SELECT vacante_id FROM postulaciones WHERE candidato_id = ?',
+      [req.user.id],
+    );
+    const ids = new Set(postuladas.map((p) => p.vacante_id));
+
+    const scored = rows
+      .filter((v) => !ids.has(v.id))
+      .map((v) => {
+        const hay = `${v.titulo} ${v.descripcion} ${v.departamento} ${v.requisitos || ''}`.toLowerCase();
+        const score = keywords.reduce((acc, k) => acc + (hay.includes(k) ? 1 : 0), 0);
+        return { ...mapVacante(v), score };
+      })
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 6);
+
+    res.json({ items: scored });
   } catch (e) { next(e); }
 }
 
@@ -79,6 +145,7 @@ export async function getOne(req, res, next) {
 export async function create(req, res, next) {
   try {
     const d = vacanteSchema.parse(req.body);
+    const publicada = enforceVisibility(d.estado, d.publicada);
     const id = uuid();
     await query(
       `INSERT INTO vacantes
@@ -89,8 +156,8 @@ export async function create(req, res, next) {
       [
         id, d.titulo, d.descripcion, d.departamento, d.ubicacion, d.modalidad, d.tipoContrato,
         d.salarioMin ?? null, d.salarioMax ?? null, d.moneda, d.requisitos ?? null, d.beneficios ?? null,
-        d.vacantesDisponibles, d.estado, d.publicada ? 1 : 0,
-        d.publicada ? new Date() : null,
+        d.vacantesDisponibles, d.estado, publicada ? 1 : 0,
+        publicada ? new Date() : null,
         d.fechaCierre ? new Date(d.fechaCierre) : null,
         req.user.id,
       ],
@@ -103,6 +170,16 @@ export async function create(req, res, next) {
 export async function update(req, res, next) {
   try {
     const d = vacanteSchema.partial().parse(req.body);
+    // Carga el estado/publicada actuales para aplicar la regla de visibilidad
+    const current = await queryOne('SELECT estado, publicada FROM vacantes WHERE id = ?', [req.params.id]);
+    if (!current) return res.status(404).json({ error: 'Vacante not found' });
+
+    const nextEstado = d.estado ?? current.estado;
+    const nextPublicada = enforceVisibility(
+      nextEstado,
+      d.publicada !== undefined ? d.publicada : !!current.publicada,
+    );
+
     const map = {
       titulo: 'titulo', descripcion: 'descripcion', departamento: 'departamento',
       ubicacion: 'ubicacion', modalidad: 'modalidad', tipoContrato: 'tipo_contrato',
@@ -115,9 +192,12 @@ export async function update(req, res, next) {
     for (const [k, col] of Object.entries(map)) {
       if (d[k] !== undefined) { sets.push(`${col} = ?`); params.push(d[k]); }
     }
-    if (d.publicada !== undefined) {
-      sets.push('publicada = ?'); params.push(d.publicada ? 1 : 0);
-      if (d.publicada === true) { sets.push('fecha_publicacion = ?'); params.push(new Date()); }
+    // Siempre aplica la regla de visibilidad cuando cambia estado o publicada
+    if (d.estado !== undefined || d.publicada !== undefined) {
+      sets.push('publicada = ?'); params.push(nextPublicada ? 1 : 0);
+      if (nextPublicada && !current.publicada) {
+        sets.push('fecha_publicacion = ?'); params.push(new Date());
+      }
     }
     if (d.fechaCierre !== undefined) {
       sets.push('fecha_cierre = ?'); params.push(d.fechaCierre ? new Date(d.fechaCierre) : null);
@@ -125,8 +205,7 @@ export async function update(req, res, next) {
     if (sets.length === 0) return res.status(400).json({ error: 'No fields to update' });
 
     params.push(req.params.id);
-    const result = await query(`UPDATE vacantes SET ${sets.join(', ')} WHERE id = ?`, params);
-    if (result.affectedRows === 0) return res.status(404).json({ error: 'Vacante not found' });
+    await query(`UPDATE vacantes SET ${sets.join(', ')} WHERE id = ?`, params);
     const vacante = mapVacante(await queryOne(`SELECT ${SELECT_COLS} FROM vacantes WHERE id = ?`, [req.params.id]));
     res.json({ vacante });
   } catch (e) { next(e); }

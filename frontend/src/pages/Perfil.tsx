@@ -130,8 +130,8 @@ export default function PerfilPage() {
             <div className="flex-1 space-y-1">
               <h3 className="text-2xl font-bold">{user.fullName}</h3>
               <p className="text-sm text-muted-foreground">{user.email}</p>
-              <Badge variant="outline" className={theme.badge}>
-                {theme.symbol} {ROLE_LABELS[user.role]}
+              <Badge variant="outline" className={`${theme.badge} inline-flex items-center gap-1`}>
+                <theme.Symbol className="h-3 w-3" /> {ROLE_LABELS[user.role]}
               </Badge>
             </div>
           </div>

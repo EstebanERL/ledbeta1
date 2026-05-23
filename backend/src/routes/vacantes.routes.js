@@ -1,16 +1,21 @@
 import { Router } from 'express';
-import { listPublic, listAdmin, getOne, create, update, remove } from '../controllers/vacantes.controller.js';
+import { listPublic, listAdmin, getOne, create, update, remove, recomendadas } from '../controllers/vacantes.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/role.js';
 
 export const vacantesRouter = Router();
 
-// Public
+// Público
 vacantesRouter.get('/public', listPublic);
-vacantesRouter.get('/:id', getOne);
+
+// Recomendaciones para el candidato autenticado (DEBE ir antes de /:id)
+vacantesRouter.get('/recomendadas', requireAuth, requireRole('candidato'), recomendadas);
 
 // Admin (RRHH / super_admin)
 vacantesRouter.get('/', requireAuth, requireRole('rrhh', 'super_admin'), listAdmin);
 vacantesRouter.post('/', requireAuth, requireRole('rrhh', 'super_admin'), create);
 vacantesRouter.patch('/:id', requireAuth, requireRole('rrhh', 'super_admin'), update);
 vacantesRouter.delete('/:id', requireAuth, requireRole('rrhh', 'super_admin'), remove);
+
+// Detalle público (al final, captura cualquier UUID restante)
+vacantesRouter.get('/:id', getOne);
