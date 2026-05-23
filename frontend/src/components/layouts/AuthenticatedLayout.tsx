@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Sparkles, LogOut, Loader2, Briefcase, Users, BarChart3,
-  Brain, GraduationCap, FileText, Settings, ClipboardList, UserCircle,
+  Brain, GraduationCap, FileText, Settings, ClipboardList, UserCircle, Search, ClipboardCheck,
 } from "lucide-react";
 
 export default function AuthenticatedLayout() {
@@ -51,11 +51,13 @@ export default function AuthenticatedLayout() {
       { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
     candidato: [
-      { to: "/dashboard",   icon: LayoutDashboard, label: "Mi panel" },
-      { to: "/empleos",     icon: Briefcase,       label: "Empleos" },
-      { to: "/postulaciones", icon: FileText,      label: "Postulaciones" },
-      { to: "/induccion",   icon: GraduationCap,   label: "Inducción" },
-      { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
+      { to: "/dashboard",       icon: LayoutDashboard, label: "Mi panel" },
+      { to: "/buscar-empleos",  icon: Search,          label: "Empleos" },
+      { to: "/postulaciones",   icon: FileText,        label: "Postulaciones" },
+      { to: "/mis-tests",       icon: ClipboardCheck,  label: "Mis tests" },
+      { to: "/test-perfil",     icon: Brain,           label: "Test de perfil" },
+      { to: "/induccion",       icon: GraduationCap,   label: "Inducción" },
+      { to: "/perfil",          icon: UserCircle,      label: "Mi perfil" },
     ],
   };
 
@@ -86,7 +88,7 @@ export default function AuthenticatedLayout() {
         {/* Identificador de rol bien visible */}
         <div className="relative mx-3 mt-4 rounded-xl border border-white/10 bg-white/5 p-3 backdrop-blur">
           <div className="flex items-center gap-2 text-xs">
-            <span className="text-lg leading-none">{theme.symbol}</span>
+            <theme.Symbol className="h-4 w-4 text-white" />
             <div className="flex flex-col">
               <span className="font-semibold text-white">{theme.label}</span>
               <span className="text-[10px] uppercase tracking-wider text-white/50">Modo activo</span>
@@ -148,8 +150,8 @@ export default function AuthenticatedLayout() {
             <Sparkles className="h-5 w-5 text-primary" />
             <span className="font-semibold">TalentForge</span>
           </Link>
-          <Badge variant="outline" className={theme.badge}>
-            {theme.symbol} {theme.shortLabel}
+          <Badge variant="outline" className={`${theme.badge} inline-flex items-center gap-1`}>
+            <theme.Symbol className="h-3 w-3" /> {theme.shortLabel}
           </Badge>
           <Button size="sm" variant="ghost" onClick={handleSignOut}>
             <LogOut className="h-4 w-4" />
