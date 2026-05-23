@@ -12,6 +12,9 @@ import MisPostulacionesPage from "@/pages/MisPostulaciones";
 import InduccionPage from "@/pages/Induccion";
 import SistemaPage from "@/pages/Sistema";
 import PerfilPage from "@/pages/Perfil";
+import TestPerfilPage from "@/pages/TestPerfil";
+import MisTestsPage from "@/pages/MisTests";
+import BuscarEmpleosPage from "@/pages/BuscarEmpleos";
 import NotFoundPage from "@/pages/NotFound";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { RoleGuard } from "@/components/RoleGuard";
@@ -40,7 +43,10 @@ export default function App() {
         <Route path="/evaluaciones" element={<RoleGuard roles={["evaluador", "rrhh", "super_admin"]}><EvaluacionesPage /></RoleGuard>} />
 
         {/* Candidato */}
+        <Route path="/buscar-empleos" element={<RoleGuard roles={["candidato"]}><BuscarEmpleosPage /></RoleGuard>} />
         <Route path="/postulaciones" element={<RoleGuard roles={["candidato"]}><MisPostulacionesPage /></RoleGuard>} />
+        <Route path="/mis-tests" element={<RoleGuard roles={["candidato"]}><MisTestsPage /></RoleGuard>} />
+        <Route path="/test-perfil" element={<RoleGuard roles={["candidato"]}><TestPerfilPage /></RoleGuard>} />
         <Route path="/induccion" element={<RoleGuard roles={["candidato"]}><InduccionPage /></RoleGuard>} />
       </Route>
 

@@ -42,7 +42,7 @@ export function SuperAdminDashboard({ name }: { name: string }) {
   return (
     <div>
       <PageHeader
-        title={`Hola, ${name} 👋`}
+        title={`Bienvenido, ${name}`}
         subtitle="Vista ejecutiva — datos reales del sistema"
         accent="from-violet-500 via-indigo-500 to-blue-500"
       />
