@@ -10,6 +10,9 @@ import { authRouter } from './routes/auth.routes.js';
 import { vacantesRouter } from './routes/vacantes.routes.js';
 import { usersRouter } from './routes/users.routes.js';
 import { postulacionesRouter } from './routes/postulaciones.routes.js';
+import { testsRouter, asignacionesRouter } from './routes/tests.routes.js';
+import { profileTestsRouter } from './routes/profileTests.routes.js';
+import { entrevistasRouter } from './routes/entrevistas.routes.js';
 import { errorHandler, notFound } from './middleware/error.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -45,6 +48,10 @@ app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/vacantes', vacantesRouter);
 app.use('/api/postulaciones', postulacionesRouter);
+app.use('/api/tests', testsRouter);
+app.use('/api/test-asignaciones', asignacionesRouter);
+app.use('/api/profile-tests', profileTestsRouter);
+app.use('/api/entrevistas', entrevistasRouter);
 
 app.use(notFound);
 app.use(errorHandler);
