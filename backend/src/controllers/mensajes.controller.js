@@ -1,6 +1,15 @@
 import { v4 as uuid } from 'uuid';
 import { query, queryOne } from '../config/db.js';
 
+/** Crea un mensaje de sistema en el chat de una postulación. */
+export async function crearMensajeSistema(postulacionId, mensaje, autorId = null, autorRol = 'sistema') {
+  await query(
+    `INSERT INTO postulacion_mensajes (id, postulacion_id, autor_id, autor_rol, mensaje)
+     VALUES (?,?,?,?,?)`,
+    [uuid(), postulacionId, autorId, autorRol, String(mensaje).slice(0, 2000)],
+  );
+}
+
 async function puedeAccederPostulacion(user, postulacionId) {
   const p = await queryOne('SELECT candidato_id FROM postulaciones WHERE id = ?', [postulacionId]);
   if (!p) return false;
