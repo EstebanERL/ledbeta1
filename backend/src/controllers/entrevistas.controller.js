@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
+import { crearMensajeSistema } from './mensajes.controller.js';
 
 const schema = z.object({
   postulacionId: z.string().uuid(),
