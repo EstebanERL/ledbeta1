@@ -1,8 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import { query, queryOne } from '../config/db.js';
 
-/** Crea un mensaje de sistema en el chat de una postulación. */
-export async function crearMensajeSistema(postulacionId, mensaje, autorId = null, autorRol = 'sistema') {
+/** Crea un mensaje de sistema en el chat de una postulación. Requiere un autor real (FK NOT NULL). */
+export async function crearMensajeSistema(postulacionId, mensaje, autorId, autorRol = 'sistema') {
+  if (!autorId) return;
   await query(
     `INSERT INTO postulacion_mensajes (id, postulacion_id, autor_id, autor_rol, mensaje)
      VALUES (?,?,?,?,?)`,
