@@ -33,6 +33,7 @@ export default function CandidatosPage() {
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState("all");
   const [openProfileId, setOpenProfileId] = useState<string | null>(null);
+  const [openProcesoId, setOpenProcesoId] = useState<string | null>(null);
   const [scheduleFor, setScheduleFor] = useState<{ id: string; candidatoNombre: string; vacanteTitulo: string } | null>(null);
 
   const updateMut = useMutation({
