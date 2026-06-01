@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
+import { crearMensajeSistema } from './mensajes.controller.js';
 
 const preguntaSchema = z.object({
   id: z.string().min(1),
@@ -70,9 +71,15 @@ export async function asignarTest(req, res, next) {
     await query(`UPDATE postulaciones SET estado = 'test_asignado' WHERE id = ?`, [postulacionId]);
     await registrarEvento({
       postulacionId, estado: 'test_asignado', tipo: 'estado',
-      nota: 'Test asignado por evaluador',
+      nota: observaciones ? `Test asignado: ${observaciones}` : 'Test asignado por evaluador',
       autorId: req.user.id, autorRol: req.user.role,
     });
+    const t = await queryOne('SELECT titulo, tipo FROM tests WHERE id = ?', [testId]);
+    await crearMensajeSistema(
+      postulacionId,
+      `Se te asignó un nuevo test ${t?.tipo || ''}: "${t?.titulo || ''}". Revísalo en "Mis tests".${observaciones ? `\n\nInstrucciones: ${observaciones}` : ''}`,
+      req.user.id, req.user.role,
+    );
     res.status(201).json({ id });
   } catch (e) { next(e); }
 }

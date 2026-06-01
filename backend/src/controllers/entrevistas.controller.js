@@ -2,6 +2,7 @@ import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
+import { crearMensajeSistema } from './mensajes.controller.js';
 
 const schema = z.object({
   postulacionId: z.string().uuid(),
@@ -36,9 +37,18 @@ export async function crearEntrevista(req, res, next) {
     await query(`UPDATE postulaciones SET estado = 'entrevista_pendiente' WHERE id = ?`, [d.postulacionId]);
     await registrarEvento({
       postulacionId: d.postulacionId, estado: 'entrevista_pendiente', tipo: 'estado',
-      nota: `Entrevista ${d.modalidad} programada`,
+      nota: `Entrevista ${d.modalidad} programada${d.notas ? `: ${d.notas}` : ''}`,
       autorId: req.user.id, autorRol: req.user.role,
     });
+    const when = new Date(d.programadaPara).toLocaleString();
+    const loc = d.modalidad === 'virtual'
+      ? (d.link ? `\nLink: ${d.link}` : '')
+      : (d.ubicacion ? `\nLugar: ${d.ubicacion}` : '');
+    await crearMensajeSistema(
+      d.postulacionId,
+      `Se programó una entrevista ${d.modalidad} para el ${when}.${loc}${d.notas ? `\n\nNotas: ${d.notas}` : ''}`,
+      req.user.id, req.user.role,
+    );
     res.status(201).json({ id });
   } catch (e) { next(e); }
 }

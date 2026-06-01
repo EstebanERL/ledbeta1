@@ -114,12 +114,63 @@ export function useMisAsignacionesTest(enabled = true) {
     queryFn: async () => (await api.get<{ items: any[] }>("/test-asignaciones/me")).data.items,
   });
 }
+export function useTests(enabled = true) {
+  return useQuery({
+    enabled, queryKey: ["tests"],
+    queryFn: async () => (await api.get<{ items: any[] }>("/tests")).data.items,
+  });
+}
+export function useAsignacionesByPostulacion(postulacionId: string | null) {
+  return useQuery({
+    enabled: !!postulacionId, queryKey: ["test-asignaciones", "post", postulacionId],
+    queryFn: async () => (await api.get<{ items: any[] }>(`/test-asignaciones/postulacion/${postulacionId}`)).data.items,
+  });
+}
+export function useEntrevistasByPostulacion(postulacionId: string | null) {
+  return useQuery({
+    enabled: !!postulacionId, queryKey: ["entrevistas", postulacionId],
+    queryFn: async () => (await api.get<{ items: any[] }>(`/entrevistas/postulacion/${postulacionId}`)).data.items,
+  });
+}
+export function useUserProfileTest(userId: string | null) {
+  return useQuery({
+    enabled: !!userId, queryKey: ["profile-test", userId],
+    queryFn: async () => (await api.get<{ test: ProfileTest | null }>(`/profile-tests/user/${userId}`)).data.test,
+  });
+}
 
 export function fileUrl(p?: string | null): string | undefined {
   if (!p) return undefined;
   if (/^https?:\/\//i.test(p)) return p;
   const base = (import.meta.env.VITE_API_URL || "http://localhost:4000/api").replace(/\/api\/?$/, "");
   return `${base}${p.startsWith("/") ? "" : "/"}${p}`;
+}
+
+export const ESTADOS_FINALIZADOS = ["contratada", "rechazada"] as const;
+export function isFinalizada(estado: string) {
+  return (ESTADOS_FINALIZADOS as readonly string[]).includes(estado);
+}
+export const ESTADOS_VACANTE_FINALIZADA = ["cerrada"] as const;
+export function isVacanteFinalizada(estado: string) {
+  return (ESTADOS_VACANTE_FINALIZADA as readonly string[]).includes(estado);
+}
+
+export const ROLE_LABEL: Record<string, string> = {
+  super_admin: "Super Admin",
+  rrhh: "RRHH",
+  evaluador: "Evaluador",
+  candidato: "Candidato",
+  sistema: "Sistema",
+};
+export function roleBadgeColor(role: string): string {
+  const map: Record<string, string> = {
+    super_admin: "bg-violet-500/15 text-violet-600 border-violet-500/30",
+    rrhh: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+    evaluador: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+    candidato: "bg-orange-500/15 text-orange-600 border-orange-500/30",
+    sistema: "bg-slate-500/15 text-slate-600 border-slate-500/30",
+  };
+  return map[role] ?? "bg-muted text-muted-foreground";
 }
 
 export const ESTADOS_POSTULACION = [
