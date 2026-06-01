@@ -32,6 +32,7 @@ export default function AuthenticatedLayout() {
       { to: "/usuarios",    icon: Users,           label: "Usuarios" },
       { to: "/vacantes",    icon: Briefcase,       label: "Vacantes" },
       { to: "/candidatos",  icon: ClipboardList,   label: "Candidatos" },
+      { to: "/procesos-finalizados", icon: Archive, label: "Procesos finalizados" },
       { to: "/reportes",    icon: BarChart3,       label: "Reportes" },
       { to: "/sistema",     icon: Settings,        label: "Sistema" },
       { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
@@ -41,6 +42,7 @@ export default function AuthenticatedLayout() {
       { to: "/vacantes",    icon: Briefcase,       label: "Vacantes" },
       { to: "/candidatos",  icon: Users,           label: "Candidatos" },
       { to: "/evaluaciones",icon: ClipboardList,   label: "Evaluaciones" },
+      { to: "/procesos-finalizados", icon: Archive, label: "Procesos finalizados" },
       { to: "/reportes",    icon: BarChart3,       label: "Reportes" },
       { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
@@ -48,6 +50,7 @@ export default function AuthenticatedLayout() {
       { to: "/dashboard",   icon: LayoutDashboard, label: "Inicio" },
       { to: "/evaluaciones",icon: Brain,           label: "Evaluaciones" },
       { to: "/candidatos",  icon: Users,           label: "Candidatos" },
+      { to: "/procesos-finalizados", icon: Archive, label: "Procesos finalizados" },
       { to: "/perfil",      icon: UserCircle,      label: "Mi perfil" },
     ],
     candidato: [
