@@ -15,6 +15,7 @@ import PerfilPage from "@/pages/Perfil";
 import TestPerfilPage from "@/pages/TestPerfil";
 import MisTestsPage from "@/pages/MisTests";
 import BuscarEmpleosPage from "@/pages/BuscarEmpleos";
+import ProcesosFinalizadosPage from "@/pages/ProcesosFinalizados";
 import NotFoundPage from "@/pages/NotFound";
 import AuthenticatedLayout from "@/components/layouts/AuthenticatedLayout";
 import { RoleGuard } from "@/components/RoleGuard";
