@@ -22,9 +22,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   Users, Loader2, Download, Eye, Mail, Phone, MapPin, Linkedin, Github, Globe, FileText,
-  Briefcase, GraduationCap, CalendarPlus, CalendarClock, Brain, BarChart3,
+  Briefcase, GraduationCap, CalendarPlus, CalendarClock, Brain, BarChart3, MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ProcesoDetalle } from "@/components/proceso/ProcesoDetalle";
 
 export default function CandidatosPage() {
   const { data, isLoading } = usePostulaciones();
