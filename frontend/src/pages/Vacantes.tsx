@@ -87,7 +87,8 @@ export default function VacantesPage() {
     );
   }
 
-  const filtered = filterEstado ? items.filter((i) => i.estado === filterEstado) : items;
+  const activas = items.filter((i) => i.estado !== "cerrada");
+  const filtered = filterEstado ? activas.filter((i) => i.estado === filterEstado) : activas;
   const stats = {
     total: items.length,
     abiertas: items.filter((i) => i.estado === "abierta").length,
