@@ -122,6 +122,9 @@ export default function CandidatosPage() {
                     onClick={() => setScheduleFor({ id: p.id, candidatoNombre: p.candidatoNombre, vacanteTitulo: p.vacanteTitulo })}>
                     <CalendarPlus className="mr-1 h-3.5 w-3.5" /> Entrevista
                   </Button>
+                  <Button size="sm" variant="outline" onClick={() => setOpenProcesoId(p.id)}>
+                    <MessageSquare className="mr-1 h-3 w-3" /> Proceso
+                  </Button>
                   <Button size="sm" variant="outline" onClick={() => setOpenProfileId(p.candidatoId)}>
                     <Eye className="mr-1 h-3 w-3" /> Perfil
                   </Button>
@@ -134,6 +137,14 @@ export default function CandidatosPage() {
 
       <CandidateProfileSheet id={openProfileId} onClose={() => setOpenProfileId(null)} />
       <ScheduleInterviewDialog target={scheduleFor} onClose={() => setScheduleFor(null)} />
+      <Sheet open={!!openProcesoId} onOpenChange={(o) => !o && setOpenProcesoId(null)}>
+        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-lg">
+          {openProcesoId && (() => {
+            const p = (data ?? []).find((x) => x.id === openProcesoId);
+            return <ProcesoDetalle id={openProcesoId} titulo={p?.candidatoNombre} subtitle={p?.vacanteTitulo} />;
+          })()}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
