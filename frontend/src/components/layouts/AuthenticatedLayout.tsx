@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard, Sparkles, LogOut, Loader2, Briefcase, Users, BarChart3,
-  Brain, GraduationCap, FileText, Settings, ClipboardList, UserCircle, Search, ClipboardCheck,
+  Brain, GraduationCap, FileText, Settings, ClipboardList, UserCircle, Search, ClipboardCheck, Archive,
 } from "lucide-react";
 
 export default function AuthenticatedLayout() {
