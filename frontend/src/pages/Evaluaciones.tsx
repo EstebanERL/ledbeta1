@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
-  usePostulaciones, useTests, estadoColor, ESTADOS_POSTULACION, ESTADO_LABEL, isFinalizada,
+  usePostulaciones, useTests, estadoColor, ESTADO_LABEL, isFinalizada,
 } from "@/lib/queries";
 import { PageHeader, StatCard, Section } from "@/components/dashboards/shared";
 import { Badge } from "@/components/ui/badge";
@@ -78,16 +78,6 @@ export default function EvaluacionesPage() {
                     onChange={(e) => setNotas({ ...notas, [p.id]: e.target.value })}
                   />
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Select onValueChange={(v) => update.mutate({ id: p.id, body: { estado: v, notas: notas[p.id] } })}>
-                      <SelectTrigger className="h-9 w-48">
-                        <SelectValue placeholder="Cambiar estado..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ESTADOS_POSTULACION.map((e) => (
-                          <SelectItem key={e} value={e}>{ESTADO_LABEL[e] ?? e}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
                     <Button size="sm" variant="outline"
                       onClick={() => update.mutate({ id: p.id, body: { notas: notas[p.id] ?? p.notas } })}>
                       Guardar notas
