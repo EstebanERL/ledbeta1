@@ -28,6 +28,7 @@ type Vacante = {
   moneda: string;
   descripcion: string;
   fechaPublicacion?: string | null;
+  vacantesDisponibles?: number;
 };
 
 export default function EmpleosPage() {
@@ -153,7 +154,8 @@ export default function EmpleosPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {items.map((v) => {
-              const yaPostulado = postulado.has(v.id);
+              const yaPostulado = !!user && user.role === "candidato" && postulado.has(v.id);
+              const cupos = Number(v.vacantesDisponibles ?? 1);
               return (
                 <article key={v.id} className="group flex flex-col rounded-2xl border bg-card p-6 shadow-sm transition hover:shadow-elegant hover:-translate-y-0.5">
                   <div className="flex items-start justify-between gap-2">
@@ -172,6 +174,12 @@ export default function EmpleosPage() {
                       {v.salarioMax && Number(v.salarioMax).toLocaleString("es-CO")} {v.moneda}
                     </div>
                   )}
+                  {!user && (
+                    <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                      <Briefcase className="h-3 w-3" />
+                      {cupos === 1 ? "1 cupo disponible" : `${cupos} cupos disponibles`}
+                    </div>
+                  )}
                   <div className="mt-auto pt-4">
                     {yaPostulado ? (
                       <Button disabled variant="outline" className="w-full">
@@ -179,7 +187,7 @@ export default function EmpleosPage() {
                       </Button>
                     ) : (
                       <Button onClick={() => onApplyClick(v)} className="w-full bg-gradient-primary">
-                        <Briefcase className="mr-2 h-4 w-4" />Postularme
+                        <Briefcase className="mr-2 h-4 w-4" />{user ? "Postularme" : "Iniciar sesión y postularme"}
                       </Button>
                     )}
                   </div>
