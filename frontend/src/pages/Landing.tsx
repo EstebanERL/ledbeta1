@@ -1,8 +1,24 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  Briefcase, Users, BarChart3, Brain, ShieldCheck, Sparkles,
-  ArrowRight, CheckCircle2, FileText, GraduationCap,
+  Briefcase, 
+  Users, 
+  BarChart3, 
+  Brain, 
+  ShieldCheck, 
+  Sparkles,
+  ArrowRight, 
+  CheckCircle2, 
+  FileText, 
+  GraduationCap, 
+  Linkedin,
+  Facebook,
+  Instagram,
+  Twitter,
+  Mail,
+  Phone,
+  MapPin,
+
 } from "lucide-react";
 import heroImg from "@/assets/hero-recruitment.jpg";
 
@@ -145,10 +161,196 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="border-t">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-muted-foreground md:flex-row">
-          <div>© {new Date().getFullYear()} TalentForge.</div>
-          <div>Backend: Express + Prisma + MySQL · Frontend: React + Vite</div>
+      <footer className="border-t bg-muted/30 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-6 py-10">
+
+          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">
+
+            {/* Empresa */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                TalentForge
+              </h3>
+
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">
+                Plataforma integral para reclutamiento, evaluación,
+                selección y contratación de talento humano.
+              </p>
+            </div>
+
+            {/* Navegación */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Navegación
+              </h3>
+
+              <ul className="mt-3 space-y-3 text-sm">
+
+                <li>
+                  <Link
+                    to="/"
+                    className="text-muted-foreground transition hover:text-primary"
+                  >
+                    Inicio
+                  </Link>
+                </li>
+
+                <li>
+                  <a
+                    href="#features"
+                    className="text-muted-foreground transition hover:text-primary"
+                  >
+                    Funcionalidades
+                  </a>
+                </li>
+
+                <li>
+                  <a
+                    href="#roles"
+                    className="text-muted-foreground transition hover:text-primary"
+                  >
+                    Roles
+                  </a>
+                </li>
+
+                <li>
+                  <Link
+                    to="/empleos"
+                    className="text-muted-foreground transition hover:text-primary"
+                  >
+                    Vacantes
+                  </Link>
+                </li>
+
+              </ul>
+            </div>
+
+            {/* Contacto */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Contacto
+              </h3>
+
+              <ul className="mt-3 space-y-3 text-sm">
+
+                <li>
+                  <a
+                    href="mailto:contacto@talentforge.com"
+                    className="flex items-center gap-2 text-muted-foreground transition hover:text-primary"
+                  >
+                    <Mail className="h-4 w-4" />
+                    contacto@talentforge.com
+                  </a>
+                </li>
+
+                <li>
+                  <a
+                    href="tel:+573001234567"
+                    className="flex items-center gap-2 text-muted-foreground transition hover:text-primary"
+                  >
+                    <Phone className="h-4 w-4" />
+                    +57 300 123 4567
+                  </a>
+                </li>
+
+                <li className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  Barranquilla, Colombia
+                </li>
+
+              </ul>
+            </div>
+
+            {/* Redes Sociales */}
+            <div>
+              <h3 className="text-lg font-semibold text-foreground">
+                Síguenos
+              </h3>
+
+              <ul className="mt-3 space-y-3 text-sm">
+
+                <li>
+                  <a
+                    href="https://linkedin.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground transition hover:text-primary"
+                  >
+                    <Linkedin className="h-4 w-4" />
+                    LinkedIn
+                  </a>
+                </li>
+
+                <li>
+                  <a
+                    href="https://facebook.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground transition hover:text-primary"
+                  >
+                    <Facebook className="h-4 w-4" />
+                    Facebook
+                  </a>
+                </li>
+
+                <li>
+                  <a
+                    href="https://instagram.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground transition hover:text-primary"
+                  >
+                    <Instagram className="h-4 w-4" />
+                    Instagram
+                  </a>
+                </li>
+
+                <li>
+                  <a
+                    href="https://x.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-muted-foreground transition hover:text-primary"
+                  >
+                    <Twitter className="h-4 w-4" />
+                    X (Twitter)
+                  </a>
+                </li>
+
+              </ul>
+            </div>
+
+          </div>
+
+          {/* Línea inferior */}
+          <div className="mt-10 border-t pt-6 text-center text-sm text-muted-foreground">
+
+            <p>
+              © {new Date().getFullYear()} TalentForge. Todos los derechos reservados.
+            </p>
+
+            <div className="mt-2 flex flex-wrap justify-center gap-4">
+
+              <Link
+                to="/"
+                className="hover:text-primary transition"
+              >
+                Política de privacidad
+              </Link>
+
+              <span>•</span>
+
+              <Link
+                to="/"
+                className="hover:text-primary transition"
+              >
+                Términos y condiciones
+              </Link>
+
+            </div>
+
+          </div>
+
         </div>
       </footer>
     </div>
