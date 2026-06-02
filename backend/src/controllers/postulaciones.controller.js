@@ -1,13 +1,9 @@
 import { v4 as uuid } from 'uuid';
 import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
+import { crearMensajeSistema } from './mensajes.controller.js';
 import { autoCierreVacante } from './vacantes.controller.js';
-
-const ESTADOS = [
-  'enviada', 'en_revision', 'evaluacion', 'test_asignado',
-  'entrevista', 'entrevista_pendiente', 'entrevista_realizada',
-  'aprobado', 'rechazada', 'contratada',
-];
+import { canTransition, allowedTransitionsFor, isFinal, ESTADOS } from '../lib/state-machine.js';
 
 export async function listAll(req, res, next) {
   try {
@@ -106,9 +102,26 @@ export async function listForVacante(req, res, next) {
 export async function updateEstado(req, res, next) {
   try {
     const { estado, notas } = req.body;
-    if (estado && !ESTADOS.includes(estado)) return res.status(400).json({ error: 'Estado inválido' });
+    if (estado && !ESTADOS.includes(estado)) {
+      return res.status(400).json({ error: 'Estado inválido' });
+    }
     const post = await queryOne('SELECT vacante_id, estado FROM postulaciones WHERE id = ?', [req.params.id]);
     if (!post) return res.status(404).json({ error: 'Postulación no encontrada' });
+
+    // Enforce flujo controlado
+    if (estado && estado !== post.estado) {
+      if (!canTransition(post.estado, estado)) {
+        return res.status(400).json({
+          error: `Transición no permitida: ${post.estado} → ${estado}`,
+        });
+      }
+      const allowed = allowedTransitionsFor(req.user.role, post.estado);
+      if (!allowed.includes(estado)) {
+        return res.status(403).json({
+          error: 'Tu rol no puede ejecutar esta acción sobre el candidato',
+        });
+      }
+    }
 
     const sets = []; const params = [];
     if (estado !== undefined) { sets.push('estado = ?'); params.push(estado); }
@@ -123,6 +136,17 @@ export async function updateEstado(req, res, next) {
         nota: notas || null,
         autorId: req.user.id, autorRol: req.user.role,
       });
+      // Mensajes automáticos del sistema en hitos clave
+      const mensajeMap = {
+        en_revision: 'Tu postulación está siendo revisada por el equipo de selección.',
+        entrevista_pendiente: 'Pasaste a la etapa de entrevista. Pronto recibirás la programación.',
+        entrevista_realizada: 'La entrevista ha sido marcada como realizada. Estamos evaluando los resultados.',
+        contratada: '¡Felicidades! Has sido seleccionado/a para el cargo. RRHH te contactará para los siguientes pasos.',
+        rechazada: 'Lamentamos informarte que tu proceso ha concluido para esta vacante. Te invitamos a postularte a futuras oportunidades.',
+      };
+      if (mensajeMap[estado]) {
+        await crearMensajeSistema(req.params.id, mensajeMap[estado], req.user.id, req.user.role);
+      }
     }
     // Auto-cierre si se contrató: cuenta contratados y cierra vacante si cubre cupos
     if (estado === 'contratada') {
