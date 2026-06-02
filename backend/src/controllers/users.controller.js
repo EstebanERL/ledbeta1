@@ -2,6 +2,8 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 import { query, queryOne } from '../config/db.js';
+import { registrarEvento } from './eventos.controller.js';
+import { crearMensajeSistema } from './mensajes.controller.js';
 
 const PROFILE_COLS = `
   id, email, full_name AS fullName, role, avatar_url AS avatarUrl,
@@ -173,11 +175,31 @@ export async function uploadCv(req, res, next) {
   } catch (e) { next(e); }
 }
 
-// Detalle público (RRHH / Evaluador / Admin): ver perfil de un candidato
+// Detalle público (RRHH / Evaluador / Admin): ver perfil de un candidato.
+// Al abrirlo, avanza automáticamente cualquier postulación 'enviada' a 'en_revision'.
 export async function getById(req, res, next) {
   try {
     const row = await queryOne(`SELECT ${PROFILE_COLS} FROM users WHERE id = ?`, [req.params.id]);
     if (!row) return res.status(404).json({ error: 'User not found' });
+    if (row.role === 'candidato' && ['rrhh', 'evaluador', 'super_admin'].includes(req.user.role)) {
+      const pendientes = await query(
+        `SELECT id FROM postulaciones WHERE candidato_id = ? AND estado = 'enviada'`,
+        [req.params.id],
+      );
+      for (const p of pendientes) {
+        await query(`UPDATE postulaciones SET estado = 'en_revision' WHERE id = ?`, [p.id]);
+        await registrarEvento({
+          postulacionId: p.id, estado: 'en_revision', tipo: 'estado',
+          nota: `Postulación abierta por ${req.user.role}`,
+          autorId: req.user.id, autorRol: req.user.role,
+        });
+        await crearMensajeSistema(
+          p.id,
+          'Tu postulación está siendo revisada por el equipo de selección.',
+          req.user.id, req.user.role,
+        );
+      }
+    }
     res.json({ user: parseJson(row, ['skills', 'experience', 'education']) });
   } catch (e) { next(e); }
 }

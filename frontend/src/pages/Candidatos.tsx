@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import {
-  usePostulaciones, estadoColor, ESTADOS_POSTULACION, ESTADO_LABEL,
+  usePostulaciones, estadoColor, ESTADO_LABEL, allowedTransitionsFor,
   useUserProfile, useUserProfileTest, useEntrevistasByPostulacion,
   fileUrl, isFinalizada, Postulacion,
 } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
 import { PageHeader, Section, StatCard } from "@/components/dashboards/shared";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +30,7 @@ import { ProcesoDetalle } from "@/components/proceso/ProcesoDetalle";
 
 export default function CandidatosPage() {
   const { data, isLoading } = usePostulaciones();
+  const { user } = useAuth();
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [estado, setEstado] = useState("all");
@@ -57,7 +59,8 @@ export default function CandidatosPage() {
     aprobados: activas.filter((p) => p.estado === "aprobado").length,
   };
 
-  const estadosActivos = ESTADOS_POSTULACION.filter((e) => !isFinalizada(e));
+  const estadosActivos = ["enviada","en_revision","test_asignado","test_completado","entrevista_pendiente","entrevista_realizada"];
+  const role = user?.role ?? "rrhh";
 
   return (
     <div>
@@ -108,20 +111,30 @@ export default function CandidatosPage() {
                     <div className="truncate text-xs text-muted-foreground">{p.candidatoEmail} · {p.vacanteTitulo}</div>
                   </div>
                   <Badge variant="outline" className={estadoColor(p.estado)}>{ESTADO_LABEL[p.estado] ?? p.estado}</Badge>
-                  <Select value={p.estado} onValueChange={(v) => updateMut.mutate({ id: p.id, estado: v })}>
-                    <SelectTrigger className="h-8 w-44"><SelectValue /></SelectTrigger>
-                    <SelectContent>{ESTADOS_POSTULACION.map((e) => <SelectItem key={e} value={e}>{ESTADO_LABEL[e]}</SelectItem>)}</SelectContent>
-                  </Select>
+                  {(() => {
+                    const next = allowedTransitionsFor(role, p.estado);
+                    if (next.length === 0) return null;
+                    return (
+                      <Select value="" onValueChange={(v) => updateMut.mutate({ id: p.id, estado: v })}>
+                        <SelectTrigger className="h-8 w-48"><SelectValue placeholder="Avanzar a..." /></SelectTrigger>
+                        <SelectContent>
+                          {next.map((e) => <SelectItem key={e} value={e}>{ESTADO_LABEL[e] ?? e}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
                   {p.cvUrl && (
                     <a href={fileUrl(p.cvUrl)} target="_blank" rel="noreferrer"
                        className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
                       <Download className="h-3 w-3" /> CV
                     </a>
                   )}
-                  <Button size="sm" variant="outline"
-                    onClick={() => setScheduleFor({ id: p.id, candidatoNombre: p.candidatoNombre, vacanteTitulo: p.vacanteTitulo })}>
-                    <CalendarPlus className="mr-1 h-3.5 w-3.5" /> Entrevista
-                  </Button>
+                  {role !== "evaluador" && (
+                    <Button size="sm" variant="outline"
+                      onClick={() => setScheduleFor({ id: p.id, candidatoNombre: p.candidatoNombre, vacanteTitulo: p.vacanteTitulo })}>
+                      <CalendarPlus className="mr-1 h-3.5 w-3.5" /> Entrevista
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" onClick={() => setOpenProcesoId(p.id)}>
                     <MessageSquare className="mr-1 h-3 w-3" /> Proceso
                   </Button>
