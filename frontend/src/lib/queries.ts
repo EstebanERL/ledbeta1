@@ -174,7 +174,7 @@ export function roleBadgeColor(role: string): string {
 }
 
 export const ESTADOS_POSTULACION = [
-  "enviada", "en_revision", "evaluacion", "test_asignado",
+  "enviada", "en_revision", "evaluacion", "test_asignado", "test_completado",
   "entrevista_pendiente", "entrevista_realizada", "aprobado",
   "rechazada", "contratada",
 ] as const;
@@ -184,6 +184,7 @@ export const ESTADO_LABEL: Record<string, string> = {
   en_revision: "En revisión",
   evaluacion: "En evaluación",
   test_asignado: "Test asignado",
+  test_completado: "Test completado",
   entrevista: "Entrevista",
   entrevista_pendiente: "Entrevista pendiente",
   entrevista_realizada: "Entrevista realizada",
@@ -198,6 +199,7 @@ export function estadoColor(estado: string): string {
     en_revision: "bg-amber-500/15 text-amber-600 border-amber-500/30",
     evaluacion: "bg-violet-500/15 text-violet-600 border-violet-500/30",
     test_asignado: "bg-indigo-500/15 text-indigo-600 border-indigo-500/30",
+    test_completado: "bg-fuchsia-500/15 text-fuchsia-600 border-fuchsia-500/30",
     entrevista: "bg-cyan-500/15 text-cyan-600 border-cyan-500/30",
     entrevista_pendiente: "bg-cyan-500/15 text-cyan-600 border-cyan-500/30",
     entrevista_realizada: "bg-teal-500/15 text-teal-600 border-teal-500/30",
@@ -209,6 +211,28 @@ export function estadoColor(estado: string): string {
 }
 
 export const TIMELINE_ORDER = [
-  "enviada", "en_revision", "evaluacion", "test_asignado",
-  "entrevista_pendiente", "entrevista_realizada", "aprobado", "contratada",
+  "enviada", "en_revision", "test_asignado", "test_completado",
+  "entrevista_pendiente", "entrevista_realizada", "contratada",
 ];
+
+/** Flujo controlado (debe coincidir con backend/src/lib/state-machine.js). */
+export const TRANSITIONS: Record<string, string[]> = {
+  enviada:              ["en_revision", "rechazada"],
+  en_revision:          ["test_asignado", "entrevista_pendiente", "rechazada"],
+  evaluacion:           ["test_asignado", "entrevista_pendiente", "rechazada"],
+  test_asignado:        ["test_completado", "rechazada"],
+  test_completado:      ["entrevista_pendiente", "rechazada"],
+  entrevista_pendiente: ["entrevista_realizada", "rechazada"],
+  entrevista_realizada: ["contratada", "rechazada"],
+  aprobado:             ["contratada", "rechazada"],
+  contratada:           [],
+  rechazada:            [],
+};
+
+const ACCIONES_FINALES = new Set(["contratada", "rechazada"]);
+
+export function allowedTransitionsFor(role: string, from: string): string[] {
+  const list = TRANSITIONS[from] ?? [];
+  if (role === "evaluador") return list.filter((s) => !ACCIONES_FINALES.has(s));
+  return list;
+}
