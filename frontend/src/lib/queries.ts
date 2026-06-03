@@ -248,3 +248,27 @@ export function allowedTransitionsFor(role: string, from: string): string[] {
   if (role === "evaluador") return list.filter((s) => !ACCIONES_FINALES.has(s));
   return list;
 }
+
+/** Umbral mínimo de aprobación de un test técnico (porcentaje). */
+export const APROBACION_PCT = 60;
+
+export type AsignacionTest = {
+  id: string; testId: string; titulo: string; tipo: "tecnico" | "psicologico";
+  categoria?: string | null; estado: "pendiente" | "en_curso" | "completado" | "calificado";
+  score?: number | null; maxScore?: number | null; observaciones?: string | null;
+  respuestas?: Record<string, string | string[]> | null;
+  preguntas?: any[]; createdAt: string; completadoAt?: string | null;
+  vacanteTitulo?: string;
+};
+
+export function calcularResumenAsignacion(a: AsignacionTest) {
+  const max = Number(a.maxScore ?? 0);
+  const score = Number(a.score ?? 0);
+  const tieneClave = (a.preguntas ?? []).some((q: any) =>
+    (q.opciones ?? []).some((o: any) => o.correcta),
+  );
+  const pct = max > 0 ? Math.round((score / max) * 100) : 0;
+  const completado = a.estado === "completado" || a.estado === "calificado";
+  const aprobado = tieneClave && completado ? pct >= APROBACION_PCT : null;
+  return { pct, tieneClave, completado, aprobado, max, score };
+}
