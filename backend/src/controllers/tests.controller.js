@@ -107,6 +107,40 @@ export async function duplicateTest(req, res, next) {
   } catch (e) { next(e); }
 }
 
+export async function deleteTest(req, res, next) {
+  try {
+    const used = await queryOne('SELECT COUNT(*) AS n FROM test_asignaciones WHERE test_id = ?', [req.params.id]);
+    if (Number(used?.n || 0) > 0) {
+      return res.status(409).json({ error: 'No se puede eliminar: el test ya está asignado. Desactívalo en su lugar.' });
+    }
+    const r = await query('DELETE FROM tests WHERE id = ?', [req.params.id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+}
+
+export async function testStats(req, res, next) {
+  try {
+    const id = req.params.id;
+    const rows = await query(
+      `SELECT estado, score, max_score AS maxScore
+         FROM test_asignaciones WHERE test_id = ?`, [id],
+    );
+    const usos = rows.length;
+    const completados = rows.filter((r) => r.estado === 'completado' || r.estado === 'calificado');
+    let aprobados = 0, reprobados = 0, sumaPct = 0;
+    for (const r of completados) {
+      const max = Number(r.maxScore || 0);
+      const sc  = Number(r.score || 0);
+      const pct = max > 0 ? (sc / max) * 100 : 0;
+      sumaPct += pct;
+      if (pct >= 60) aprobados += 1; else reprobados += 1;
+    }
+    const promedio = completados.length ? Math.round(sumaPct / completados.length) : 0;
+    res.json({ usos, completados: completados.length, aprobados, reprobados, promedio });
+  } catch (e) { next(e); }
+}
+
 // ----- Asignaciones -----
 
 export async function asignarTest(req, res, next) {
