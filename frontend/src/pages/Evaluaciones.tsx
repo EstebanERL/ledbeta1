@@ -273,7 +273,7 @@ function TestEditorDialog({ test, onClose }: { test: any | null; onClose: () => 
   const qc = useQueryClient();
   const [data, setData] = useState<any>(test);
   // sync when prop changes
-  useMemo(() => { setData(test); }, [test]);
+  useEffect(() => { setData(test); }, [test]);
 
   const isNew = test && !test.id;
   const save = useMutation({
