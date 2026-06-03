@@ -91,21 +91,7 @@ export function ProcesoDetalle({
             </h4>
             <ul className="space-y-2">
               {asignaciones.map((a: any) => (
-                <li key={a.id} className="rounded-lg border p-3 text-sm">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium">{a.titulo}</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="capitalize">{a.tipo}</Badge>
-                      <Badge variant="secondary" className="capitalize">{a.estado}</Badge>
-                    </div>
-                  </div>
-                  {a.score != null && (
-                    <div className="mt-1 text-xs text-muted-foreground">
-                      Puntaje: <span className="font-medium text-foreground">{a.score}/{a.maxScore ?? "—"}</span>
-                    </div>
-                  )}
-                  {a.observaciones && <p className="mt-1 text-xs text-muted-foreground">{a.observaciones}</p>}
-                </li>
+                <AsignacionCard key={a.id} a={a} />
               ))}
             </ul>
           </section>
@@ -114,6 +100,120 @@ export function ProcesoDetalle({
         <ChatPanel postulacionId={id} />
       </div>
     </>
+  );
+}
+
+function AsignacionCard({ a }: { a: any }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [obs, setObs] = useState(a.observaciones ?? "");
+  const puedeCalificar = user?.role && ["evaluador", "rrhh", "super_admin"].includes(user.role);
+  const r = calcularResumenAsignacion(a);
+  const completado = r.completado;
+
+  const calificar = useMutation({
+    mutationFn: async () =>
+      (await api.patch(`/test-asignaciones/${a.id}/calificar`, { observaciones: obs })).data,
+    onSuccess: () => {
+      toast.success("Observaciones guardadas");
+      qc.invalidateQueries({ queryKey: ["test-asignaciones", "post", a.postulacion_id ?? a.postulacionId] });
+    },
+    onError: (e: any) => toast.error(e?.response?.data?.error ?? "Error"),
+  });
+
+  return (
+    <li className="rounded-lg border p-3 text-sm">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">{a.titulo}</span>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="capitalize">{a.tipo}</Badge>
+          <Badge variant="secondary" className="capitalize">{a.estado}</Badge>
+        </div>
+      </div>
+
+      {completado && r.tieneClave && (
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold">{r.pct}% · {r.score}/{r.max} pts</span>
+            <Badge variant="outline" className={r.aprobado
+              ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+              : "bg-rose-500/15 text-rose-700 border-rose-500/30"}>
+              {r.aprobado
+                ? <><CheckCircle2 className="mr-1 inline h-3 w-3" /> Aprobado</>
+                : <><XCircle className="mr-1 inline h-3 w-3" /> Reprobado</>}
+            </Badge>
+          </div>
+          <Progress value={r.pct} className="h-1.5" />
+          <p className="text-[10px] text-muted-foreground">Umbral {APROBACION_PCT}%</p>
+        </div>
+      )}
+      {completado && !r.tieneClave && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Test cualitativo: las respuestas deben revisarse manualmente.
+        </p>
+      )}
+
+      {completado && puedeCalificar && (
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <CollapsibleTrigger asChild>
+            <Button size="sm" variant="ghost" className="mt-2 h-7 px-2 text-xs">
+              <FileText className="mr-1 h-3 w-3" />
+              {open ? "Ocultar respuestas" : "Ver respuestas del candidato"}
+              <ChevronDown className={`ml-1 h-3 w-3 transition-transform ${open ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2 space-y-2">
+            {(a.preguntas ?? []).map((q: any, i: number) => (
+              <PreguntaResultado key={q.id} q={q} resp={a.respuestas?.[q.id]} idx={i} />
+            ))}
+            <div className="space-y-1 pt-2">
+              <label className="text-xs font-medium">Observaciones del evaluador</label>
+              <Textarea rows={2} value={obs} onChange={(e) => setObs(e.target.value)}
+                placeholder="Comentarios sobre el desempeño del candidato..." />
+              <Button size="sm" onClick={() => calificar.mutate()} disabled={calificar.isPending}>
+                {calificar.isPending ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
+                Guardar observaciones
+              </Button>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {!completado && a.observaciones && (
+        <p className="mt-1 text-xs text-muted-foreground">{a.observaciones}</p>
+      )}
+    </li>
+  );
+}
+
+function PreguntaResultado({ q, resp, idx }: { q: any; resp: any; idx: number }) {
+  const correctas = (q.opciones ?? []).filter((o: any) => o.correcta).map((o: any) => String(o.id));
+  const tieneClave = correctas.length > 0;
+  const sel = resp == null ? [] : (Array.isArray(resp) ? resp.map(String) : [String(resp)]);
+  const correcto = tieneClave && JSON.stringify([...correctas].sort()) === JSON.stringify([...sel].sort());
+  const label = (id: string) => q.opciones?.find((o: any) => String(o.id) === id)?.texto ?? id;
+  return (
+    <div className={`rounded-md border p-2 ${tieneClave ? (correcto ? "border-emerald-500/40 bg-emerald-500/5" : "border-rose-500/40 bg-rose-500/5") : "bg-muted/20"}`}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs font-medium">{idx + 1}. {q.enunciado}</p>
+        {tieneClave && (correcto
+          ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
+          : <XCircle className="h-3.5 w-3.5 shrink-0 text-rose-600" />)}
+      </div>
+      <div className="mt-1 text-[11px] text-muted-foreground">
+        <span className="font-semibold">Respuesta:</span>{" "}
+        {sel.length === 0 ? <em>(sin responder)</em> : q.tipo === "texto" ? sel[0] : sel.map(label).join(", ")}
+      </div>
+      {tieneClave && (
+        <div className="text-[11px] text-emerald-700">
+          <span className="font-semibold">Correcta:</span> {correctas.map(label).join(", ")}
+        </div>
+      )}
+      {q.explicacion && (
+        <p className="mt-1 text-[11px] italic text-muted-foreground">💡 {q.explicacion}</p>
+      )}
+    </div>
   );
 }
 
