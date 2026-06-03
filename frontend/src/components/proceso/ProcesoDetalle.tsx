@@ -4,13 +4,19 @@ import { api } from "@/lib/api";
 import {
   useEventos, useMensajes, useEntrevistasByPostulacion, useAsignacionesByPostulacion,
   ESTADO_LABEL, TIMELINE_ORDER, roleBadgeColor, ROLE_LABEL,
+  calcularResumenAsignacion, APROBACION_PCT,
 } from "@/lib/queries";
+import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Progress } from "@/components/ui/progress";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   Loader2, MessageSquare, Send, CalendarClock, ClipboardCheck, Video, MapPin, Phone,
+  CheckCircle2, XCircle, ChevronDown, FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 
