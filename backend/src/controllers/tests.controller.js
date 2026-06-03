@@ -187,16 +187,22 @@ export async function misAsignaciones(req, res, next) {
 function calcularScore(preguntas, respuestas) {
   let score = 0;
   let max = 0;
+  let tieneClave = false; // si al menos una pregunta tiene opciones correctas marcadas
   for (const q of preguntas) {
-    max += Number(q.puntaje || 1);
+    const punt = Number(q.puntaje || 1);
+    max += punt;
     if (q.tipo === 'texto') continue;
-    const r = respuestas[q.id];
-    if (!r) continue;
-    const correctas = (q.opciones || []).filter((o) => o.correcta).map((o) => o.id).sort();
-    const sel = Array.isArray(r) ? [...r].sort() : [r];
-    if (JSON.stringify(correctas) === JSON.stringify(sel)) score += Number(q.puntaje || 1);
+    const correctasArr = (q.opciones || []).filter((o) => o.correcta).map((o) => String(o.id));
+    if (correctasArr.length > 0) tieneClave = true;
+    const r = respuestas?.[q.id];
+    if (r === undefined || r === null || r === '') continue;
+    const correctas = [...correctasArr].sort();
+    const sel = (Array.isArray(r) ? r : [r]).map((x) => String(x)).sort();
+    if (correctas.length > 0 && JSON.stringify(correctas) === JSON.stringify(sel)) {
+      score += punt;
+    }
   }
-  return { score, max };
+  return { score, max, tieneClave };
 }
 
 export async function responderAsignacion(req, res, next) {
