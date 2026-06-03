@@ -221,7 +221,10 @@ export async function responderAsignacion(req, res, next) {
 
     const preguntas = typeof a.preguntas === 'string' ? JSON.parse(a.preguntas) : a.preguntas;
     const respuestas = req.body?.respuestas || {};
-    const { score, max } = calcularScore(preguntas, respuestas);
+    const { score, max, tieneClave } = calcularScore(preguntas, respuestas);
+    // Para tests sin clave (ej. psicológicos tipo Likert) registramos score = max
+    // para que aparezcan como "completados" sin penalizar al candidato.
+    const scoreFinal = tieneClave ? score : max;
 
     await query(
       `UPDATE test_asignaciones
