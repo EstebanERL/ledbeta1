@@ -130,7 +130,7 @@ function BibliotecaTab() {
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [tipo, setTipo] = useState<"all" | "tecnico" | "psicologico">("all");
-  const [estado, setEstado] = useState<"all" | "activos" | "inactivos">("all");
+  const [estado, setEstado] = useState<"all" | "activos" | "inactivos">("activos");
   const [editing, setEditing] = useState<any | null>(null);
   const [statsFor, setStatsFor] = useState<any | null>(null);
 
@@ -175,9 +175,9 @@ function BibliotecaTab() {
           <Select value={estado} onValueChange={(v: any) => setEstado(v)}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="activos">Activos</SelectItem>
               <SelectItem value="inactivos">Inactivos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
             </SelectContent>
           </Select>
         </div>
