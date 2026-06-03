@@ -230,29 +230,30 @@ export async function responderAsignacion(req, res, next) {
       `UPDATE test_asignaciones
           SET respuestas = ?, estado = 'completado', score = ?, max_score = ?, completado_at = CURRENT_TIMESTAMP
         WHERE id = ?`,
-      [JSON.stringify(respuestas), score, max, req.params.id],
+      [JSON.stringify(respuestas), scoreFinal, max, req.params.id],
     );
-    // Avanza la postulación a 'test_completado' (si está en test_asignado)
+    const pct = max > 0 ? Math.round((scoreFinal / max) * 100) : 0;
+    const resumen = tieneClave ? `${scoreFinal}/${max} (${pct}%)` : `Completado (${preguntas.length} respuestas)`;
     if (a.postulacionEstado === 'test_asignado') {
       await query(`UPDATE postulaciones SET estado = 'test_completado' WHERE id = ?`, [a.postulacion_id]);
       await registrarEvento({
         postulacionId: a.postulacion_id, estado: 'test_completado', tipo: 'estado',
-        nota: `Candidato completó test "${a.testTitulo}" (${score}/${max})`,
+        nota: `Candidato completó test "${a.testTitulo}" — ${resumen}`,
         autorId: req.user.id, autorRol: req.user.role,
       });
     } else {
       await registrarEvento({
         postulacionId: a.postulacion_id, tipo: 'test_completado',
-        nota: `Candidato completó test "${a.testTitulo}" (${score}/${max})`,
+        nota: `Candidato completó test "${a.testTitulo}" — ${resumen}`,
         autorId: req.user.id, autorRol: req.user.role,
       });
     }
     await crearMensajeSistema(
       a.postulacion_id,
-      `El candidato completó el test "${a.testTitulo}". Puntaje: ${score}/${max}.`,
+      `El candidato completó el test "${a.testTitulo}". Resultado: ${resumen}.`,
       req.user.id, req.user.role,
     );
-    res.json({ score, maxScore: max });
+    res.json({ score: scoreFinal, maxScore: max, porcentaje: pct, tieneClave });
   } catch (e) { next(e); }
 }
 
