@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useMisAsignacionesTest } from "@/lib/queries";
+import { useMisAsignacionesTest, calcularResumenAsignacion, APROBACION_PCT } from "@/lib/queries";
 import { PageHeader, Section } from "@/components/dashboards/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ClipboardCheck, Loader2, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ClipboardCheck, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MisTestsPage() {
