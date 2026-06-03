@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
 import { crearMensajeSistema } from './mensajes.controller.js';
+import { generateTest } from '../services/ai.service.js';
 
 const preguntaSchema = z.object({
   id: z.string().min(1),
@@ -311,69 +312,34 @@ export async function calificarAsignacion(req, res, next) {
   } catch (e) { next(e); }
 }
 
-// ---------- Generación de tests con IA (Lovable AI Gateway) ----------
-// Requiere LOVABLE_API_KEY en process.env. Si no está, devuelve 503.
 export async function generarTestIA(req, res, next) {
   try {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) {
-      return res.status(503).json({
-        error: 'LOVABLE_API_KEY no configurada en el backend. Agrega la variable en backend/.env para usar la generación con IA.',
-      });
-    }
-    const { tipo = 'tecnico', categoria = '', nivel = 'intermedio', cantidad = 10, instrucciones = '' } = req.body || {};
-    const total = Math.min(Math.max(parseInt(cantidad, 10) || 10, 3), 30);
+    const {
+      tipo = 'tecnico',
+      categoria = '',
+      nivel = 'intermedio',
+      cantidad = 10,
+      instrucciones = ''
+    } = req.body || {};
 
-    const sys = `Eres un experto en diseño de evaluaciones para procesos de selección. Devuelves SIEMPRE un único JSON válido sin texto adicional.`;
-    const userPrompt = [
-      `Genera un test ${tipo} de nivel ${nivel}${categoria ? ` sobre ${categoria}` : ''} con exactamente ${total} preguntas.`,
-      `Cada pregunta debe ser de opción única ("single") con 4 alternativas y exactamente una correcta.`,
-      `Marca la opción correcta con "correcta": true.`,
-      instrucciones ? `Instrucciones adicionales: ${instrucciones}` : '',
-      `Devuelve un JSON con esta forma exacta (sin envolturas):`,
-      `{"titulo":"...","descripcion":"...","categoria":"...","preguntas":[{"id":"q1","enunciado":"...","tipo":"single","puntaje":1,"opciones":[{"id":"a","texto":"...","correcta":false},{"id":"b","texto":"...","correcta":true},{"id":"c","texto":"...","correcta":false},{"id":"d","texto":"...","correcta":false}]}]}`,
-    ].filter(Boolean).join('\n');
-
-    const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [{ role: 'system', content: sys }, { role: 'user', content: userPrompt }],
-        response_format: { type: 'json_object' },
-      }),
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      if (r.status === 429) return res.status(429).json({ error: 'Límite de uso alcanzado, intenta más tarde.' });
-      if (r.status === 402) return res.status(402).json({ error: 'Sin créditos en Lovable AI. Agrega créditos para continuar.' });
-      return res.status(502).json({ error: `Error de IA: ${t.slice(0, 200)}` });
-    }
-    const data = await r.json();
-    const raw = data?.choices?.[0]?.message?.content || '{}';
-    let parsed;
-    try { parsed = JSON.parse(raw); } catch { return res.status(502).json({ error: 'La IA devolvió contenido no parseable.' }); }
-    // Normaliza ids únicos
-    const preguntas = Array.isArray(parsed.preguntas) ? parsed.preguntas : [];
-    parsed.preguntas = preguntas.slice(0, total).map((q, i) => ({
-      id: q.id || `q${i + 1}`,
-      enunciado: String(q.enunciado || '').slice(0, 500),
-      tipo: q.tipo === 'multi' || q.tipo === 'texto' ? q.tipo : 'single',
-      puntaje: Number(q.puntaje) || 1,
-      opciones: Array.isArray(q.opciones)
-        ? q.opciones.slice(0, 6).map((o, j) => ({
-            id: o.id || String.fromCharCode(97 + j),
-            texto: String(o.texto || '').slice(0, 240),
-            correcta: !!o.correcta,
-          }))
-        : [],
-    }));
-    res.json({
-      titulo: parsed.titulo || `Test ${tipo} ${categoria || ''}`.trim(),
-      descripcion: parsed.descripcion || null,
+    const resultado = await generateTest({
       tipo,
-      categoria: parsed.categoria || categoria || null,
-      preguntas: parsed.preguntas,
+      categoria,
+      nivel,
+      cantidad,
+      instrucciones,
     });
-  } catch (e) { next(e); }
+
+    res.json({
+      titulo: resultado.titulo,
+      descripcion: resultado.descripcion,
+      tipo,
+      categoria: resultado.categoria || categoria,
+      preguntas: resultado.preguntas,
+    });
+
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
 }
