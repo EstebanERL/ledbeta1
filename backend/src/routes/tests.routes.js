@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   listTests, listTestsBiblioteca, createTest, updateTest, toggleTestActive, duplicateTest,
+  deleteTest, testStats,
   asignarTest, listAsignacionesPostulacion,
   misAsignaciones, responderAsignacion, calificarAsignacion, generarTestIA,
 } from '../controllers/tests.controller.js';
