@@ -6,7 +6,7 @@ import { crearMensajeSistema } from './mensajes.controller.js';
 
 const preguntaSchema = z.object({
   id: z.string().min(1),
-  enunciado: z.string().min(1).max(500),
+  enunciado: z.string().min(1).max(800),
   tipo: z.enum(['single', 'multi', 'texto']),
   opciones: z.array(z.object({
     id: z.string(),
@@ -14,6 +14,7 @@ const preguntaSchema = z.object({
     correcta: z.boolean().optional(),
   })).optional(),
   puntaje: z.number().nonnegative().default(1),
+  explicacion: z.string().max(800).optional().nullable(),
 });
 
 const testSchema = z.object({
