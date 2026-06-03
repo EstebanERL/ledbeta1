@@ -37,7 +37,7 @@ export default function App() {
 
         {/* RRHH + Super Admin */}
         <Route path="/vacantes" element={<RoleGuard roles={["rrhh", "super_admin"]}><VacantesPage /></RoleGuard>} />
-        <Route path="/candidatos" element={<RoleGuard roles={["rrhh", "super_admin"]}><CandidatosPage /></RoleGuard>} />
+        <Route path="/candidatos" element={<RoleGuard roles={["rrhh", "evaluador", "super_admin"]}><CandidatosPage /></RoleGuard>} />
         <Route path="/reportes" element={<RoleGuard roles={["rrhh", "super_admin"]}><ReportesPage /></RoleGuard>} />
         <Route path="/procesos-finalizados" element={<RoleGuard roles={["rrhh", "evaluador", "super_admin"]}><ProcesosFinalizadosPage /></RoleGuard>} />
 

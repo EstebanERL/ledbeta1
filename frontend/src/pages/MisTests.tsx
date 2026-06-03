@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useMisAsignacionesTest } from "@/lib/queries";
+import { useMisAsignacionesTest, calcularResumenAsignacion, APROBACION_PCT } from "@/lib/queries";
 import { PageHeader, Section } from "@/components/dashboards/shared";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { ClipboardCheck, Loader2, CheckCircle2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { ClipboardCheck, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 export default function MisTestsPage() {
@@ -88,10 +89,44 @@ export default function MisTestsPage() {
                       <Button size="sm" variant="outline" className="mt-3" onClick={() => setOpenId(a.id)}>Responder</Button>
                     )
                   ) : (
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      Puntaje: {a.score ?? "—"} / {a.maxScore ?? "—"}
-                      {a.observaciones && <p className="mt-1">{a.observaciones}</p>}
-                    </div>
+                    (() => {
+                      const r = calcularResumenAsignacion(a);
+                      return (
+                        <div className="mt-3 space-y-2">
+                          {r.tieneClave ? (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <div className="text-sm">
+                                  <span className="text-2xl font-bold">{r.pct}%</span>
+                                  <span className="ml-2 text-xs text-muted-foreground">
+                                    {r.score}/{r.max} pts
+                                  </span>
+                                </div>
+                                <Badge variant="outline" className={r.aprobado
+                                  ? "bg-emerald-500/15 text-emerald-700 border-emerald-500/30"
+                                  : "bg-rose-500/15 text-rose-700 border-rose-500/30"}>
+                                  {r.aprobado
+                                    ? <><CheckCircle2 className="mr-1 inline h-3 w-3" /> Aprobado</>
+                                    : <><XCircle className="mr-1 inline h-3 w-3" /> Reprobado</>}
+                                </Badge>
+                              </div>
+                              <Progress value={r.pct} className="h-2" />
+                              <p className="text-xs text-muted-foreground">Umbral de aprobación: {APROBACION_PCT}%</p>
+                            </>
+                          ) : (
+                            <div className="rounded-lg bg-muted/40 p-3 text-sm">
+                              <CheckCircle2 className="mr-1 inline h-4 w-4 text-emerald-600" />
+                              Respuestas registradas. Un evaluador revisará tus resultados.
+                            </div>
+                          )}
+                          {a.observaciones && (
+                            <p className="rounded-md border-l-2 border-primary bg-muted/30 p-2 text-xs italic">
+                              {a.observaciones}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()
                   )}
                 </li>
               ))}

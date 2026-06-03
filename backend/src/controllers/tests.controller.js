@@ -6,7 +6,7 @@ import { crearMensajeSistema } from './mensajes.controller.js';
 
 const preguntaSchema = z.object({
   id: z.string().min(1),
-  enunciado: z.string().min(1).max(500),
+  enunciado: z.string().min(1).max(800),
   tipo: z.enum(['single', 'multi', 'texto']),
   opciones: z.array(z.object({
     id: z.string(),
@@ -14,6 +14,7 @@ const preguntaSchema = z.object({
     correcta: z.boolean().optional(),
   })).optional(),
   puntaje: z.number().nonnegative().default(1),
+  explicacion: z.string().max(800).optional().nullable(),
 });
 
 const testSchema = z.object({
@@ -106,6 +107,40 @@ export async function duplicateTest(req, res, next) {
   } catch (e) { next(e); }
 }
 
+export async function deleteTest(req, res, next) {
+  try {
+    const used = await queryOne('SELECT COUNT(*) AS n FROM test_asignaciones WHERE test_id = ?', [req.params.id]);
+    if (Number(used?.n || 0) > 0) {
+      return res.status(409).json({ error: 'No se puede eliminar: el test ya está asignado. Desactívalo en su lugar.' });
+    }
+    const r = await query('DELETE FROM tests WHERE id = ?', [req.params.id]);
+    if (r.affectedRows === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json({ ok: true });
+  } catch (e) { next(e); }
+}
+
+export async function testStats(req, res, next) {
+  try {
+    const id = req.params.id;
+    const rows = await query(
+      `SELECT estado, score, max_score AS maxScore
+         FROM test_asignaciones WHERE test_id = ?`, [id],
+    );
+    const usos = rows.length;
+    const completados = rows.filter((r) => r.estado === 'completado' || r.estado === 'calificado');
+    let aprobados = 0, reprobados = 0, sumaPct = 0;
+    for (const r of completados) {
+      const max = Number(r.maxScore || 0);
+      const sc  = Number(r.score || 0);
+      const pct = max > 0 ? (sc / max) * 100 : 0;
+      sumaPct += pct;
+      if (pct >= 60) aprobados += 1; else reprobados += 1;
+    }
+    const promedio = completados.length ? Math.round(sumaPct / completados.length) : 0;
+    res.json({ usos, completados: completados.length, aprobados, reprobados, promedio });
+  } catch (e) { next(e); }
+}
+
 // ----- Asignaciones -----
 
 export async function asignarTest(req, res, next) {
@@ -186,16 +221,22 @@ export async function misAsignaciones(req, res, next) {
 function calcularScore(preguntas, respuestas) {
   let score = 0;
   let max = 0;
+  let tieneClave = false; // si al menos una pregunta tiene opciones correctas marcadas
   for (const q of preguntas) {
-    max += Number(q.puntaje || 1);
+    const punt = Number(q.puntaje || 1);
+    max += punt;
     if (q.tipo === 'texto') continue;
-    const r = respuestas[q.id];
-    if (!r) continue;
-    const correctas = (q.opciones || []).filter((o) => o.correcta).map((o) => o.id).sort();
-    const sel = Array.isArray(r) ? [...r].sort() : [r];
-    if (JSON.stringify(correctas) === JSON.stringify(sel)) score += Number(q.puntaje || 1);
+    const correctasArr = (q.opciones || []).filter((o) => o.correcta).map((o) => String(o.id));
+    if (correctasArr.length > 0) tieneClave = true;
+    const r = respuestas?.[q.id];
+    if (r === undefined || r === null || r === '') continue;
+    const correctas = [...correctasArr].sort();
+    const sel = (Array.isArray(r) ? r : [r]).map((x) => String(x)).sort();
+    if (correctas.length > 0 && JSON.stringify(correctas) === JSON.stringify(sel)) {
+      score += punt;
+    }
   }
-  return { score, max };
+  return { score, max, tieneClave };
 }
 
 export async function responderAsignacion(req, res, next) {
@@ -214,35 +255,39 @@ export async function responderAsignacion(req, res, next) {
 
     const preguntas = typeof a.preguntas === 'string' ? JSON.parse(a.preguntas) : a.preguntas;
     const respuestas = req.body?.respuestas || {};
-    const { score, max } = calcularScore(preguntas, respuestas);
+    const { score, max, tieneClave } = calcularScore(preguntas, respuestas);
+    // Para tests sin clave (ej. psicológicos tipo Likert) registramos score = max
+    // para que aparezcan como "completados" sin penalizar al candidato.
+    const scoreFinal = tieneClave ? score : max;
 
     await query(
       `UPDATE test_asignaciones
           SET respuestas = ?, estado = 'completado', score = ?, max_score = ?, completado_at = CURRENT_TIMESTAMP
         WHERE id = ?`,
-      [JSON.stringify(respuestas), score, max, req.params.id],
+      [JSON.stringify(respuestas), scoreFinal, max, req.params.id],
     );
-    // Avanza la postulación a 'test_completado' (si está en test_asignado)
+    const pct = max > 0 ? Math.round((scoreFinal / max) * 100) : 0;
+    const resumen = tieneClave ? `${scoreFinal}/${max} (${pct}%)` : `Completado (${preguntas.length} respuestas)`;
     if (a.postulacionEstado === 'test_asignado') {
       await query(`UPDATE postulaciones SET estado = 'test_completado' WHERE id = ?`, [a.postulacion_id]);
       await registrarEvento({
         postulacionId: a.postulacion_id, estado: 'test_completado', tipo: 'estado',
-        nota: `Candidato completó test "${a.testTitulo}" (${score}/${max})`,
+        nota: `Candidato completó test "${a.testTitulo}" — ${resumen}`,
         autorId: req.user.id, autorRol: req.user.role,
       });
     } else {
       await registrarEvento({
         postulacionId: a.postulacion_id, tipo: 'test_completado',
-        nota: `Candidato completó test "${a.testTitulo}" (${score}/${max})`,
+        nota: `Candidato completó test "${a.testTitulo}" — ${resumen}`,
         autorId: req.user.id, autorRol: req.user.role,
       });
     }
     await crearMensajeSistema(
       a.postulacion_id,
-      `El candidato completó el test "${a.testTitulo}". Puntaje: ${score}/${max}.`,
+      `El candidato completó el test "${a.testTitulo}". Resultado: ${resumen}.`,
       req.user.id, req.user.role,
     );
-    res.json({ score, maxScore: max });
+    res.json({ score: scoreFinal, maxScore: max, porcentaje: pct, tieneClave });
   } catch (e) { next(e); }
 }
 

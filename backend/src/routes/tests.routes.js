@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   listTests, listTestsBiblioteca, createTest, updateTest, toggleTestActive, duplicateTest,
+  deleteTest, testStats,
   asignarTest, listAsignacionesPostulacion,
   misAsignaciones, responderAsignacion, calificarAsignacion, generarTestIA,
 } from '../controllers/tests.controller.js';
@@ -16,6 +17,8 @@ testsRouter.post('/generate-ai', requireAuth, requireRole('evaluador', 'rrhh', '
 testsRouter.patch('/:id', requireAuth, requireRole('evaluador', 'rrhh', 'super_admin'), updateTest);
 testsRouter.patch('/:id/active', requireAuth, requireRole('evaluador', 'rrhh', 'super_admin'), toggleTestActive);
 testsRouter.post('/:id/duplicate', requireAuth, requireRole('evaluador', 'rrhh', 'super_admin'), duplicateTest);
+testsRouter.delete('/:id', requireAuth, requireRole('evaluador', 'rrhh', 'super_admin'), deleteTest);
+testsRouter.get('/:id/stats', requireAuth, requireRole('evaluador', 'rrhh', 'super_admin'), testStats);
 
 export const asignacionesRouter = Router();
 
