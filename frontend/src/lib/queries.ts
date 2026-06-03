@@ -120,6 +120,18 @@ export function useTests(enabled = true) {
     queryFn: async () => (await api.get<{ items: any[] }>("/tests")).data.items,
   });
 }
+export function useTestsBiblioteca(enabled = true) {
+  return useQuery({
+    enabled, queryKey: ["tests", "biblioteca"],
+    queryFn: async () => (await api.get<{ items: any[] }>("/tests/biblioteca")).data.items,
+  });
+}
+export function useTestStats(id: string | null) {
+  return useQuery({
+    enabled: !!id, queryKey: ["test-stats", id],
+    queryFn: async () => (await api.get<{ usos: number; completados: number; aprobados: number; reprobados: number; promedio: number }>(`/tests/${id}/stats`)).data,
+  });
+}
 export function useAsignacionesByPostulacion(postulacionId: string | null) {
   return useQuery({
     enabled: !!postulacionId, queryKey: ["test-asignaciones", "post", postulacionId],
