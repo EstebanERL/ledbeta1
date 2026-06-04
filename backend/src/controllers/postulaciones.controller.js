@@ -4,6 +4,7 @@ import { registrarEvento } from './eventos.controller.js';
 import { crearMensajeSistema } from './mensajes.controller.js';
 import { autoCierreVacante } from './vacantes.controller.js';
 import { canTransition, allowedTransitionsFor, isFinal, ESTADOS } from '../lib/state-machine.js';
+import { sendMail, tplPostulacionRecibida, tplCambioEstado } from '../services/email.service.js';
 
 export async function listAll(req, res, next) {
   try {
@@ -33,7 +34,7 @@ export async function applyToVacante(req, res, next) {
     if (!vacanteId) return res.status(400).json({ error: 'vacanteId requerido' });
 
     const vac = await queryOne(
-      `SELECT id, estado, publicada FROM vacantes WHERE id = ?`,
+      `SELECT id, titulo, estado, publicada FROM vacantes WHERE id = ?`,
       [vacanteId],
     );
     if (!vac) return res.status(404).json({ error: 'Vacante no encontrada' });
@@ -64,6 +65,12 @@ export async function applyToVacante(req, res, next) {
       nota: 'Postulación enviada por el candidato',
       autorId: req.user.id, autorRol: req.user.role,
     });
+    // Correo de confirmación al candidato
+    const candidato = await queryOne('SELECT email, full_name FROM users WHERE id = ?', [req.user.id]);
+    if (candidato) {
+      const t = tplPostulacionRecibida({ fullName: candidato.full_name, vacanteTitulo: vac.titulo });
+      sendMail({ to: candidato.email, ...t }).catch(() => {});
+    }
     const post = await queryOne('SELECT * FROM postulaciones WHERE id = ?', [id]);
     res.status(201).json({ postulacion: post });
   } catch (e) { next(e); }
@@ -105,21 +112,24 @@ export async function updateEstado(req, res, next) {
     if (estado && !ESTADOS.includes(estado)) {
       return res.status(400).json({ error: 'Estado inválido' });
     }
-    const post = await queryOne('SELECT vacante_id, estado FROM postulaciones WHERE id = ?', [req.params.id]);
+    const post = await queryOne(
+      `SELECT p.vacante_id, p.estado, p.candidato_id, v.titulo AS vacanteTitulo,
+              u.email AS candidatoEmail, u.full_name AS candidatoNombre
+         FROM postulaciones p
+         JOIN vacantes v ON v.id = p.vacante_id
+         JOIN users u ON u.id = p.candidato_id
+        WHERE p.id = ?`,
+      [req.params.id],
+    );
     if (!post) return res.status(404).json({ error: 'Postulación no encontrada' });
 
-    // Enforce flujo controlado
     if (estado && estado !== post.estado) {
       if (!canTransition(post.estado, estado)) {
-        return res.status(400).json({
-          error: `Transición no permitida: ${post.estado} → ${estado}`,
-        });
+        return res.status(400).json({ error: `Transición no permitida: ${post.estado} → ${estado}` });
       }
       const allowed = allowedTransitionsFor(req.user.role, post.estado);
       if (!allowed.includes(estado)) {
-        return res.status(403).json({
-          error: 'Tu rol no puede ejecutar esta acción sobre el candidato',
-        });
+        return res.status(403).json({ error: 'Tu rol no puede ejecutar esta acción sobre el candidato' });
       }
     }
 
@@ -136,7 +146,6 @@ export async function updateEstado(req, res, next) {
         nota: notas || null,
         autorId: req.user.id, autorRol: req.user.role,
       });
-      // Mensajes automáticos del sistema en hitos clave
       const mensajeMap = {
         en_revision: 'Tu postulación está siendo revisada por el equipo de selección.',
         entrevista_pendiente: 'Pasaste a la etapa de entrevista. Pronto recibirás la programación.',
@@ -147,8 +156,14 @@ export async function updateEstado(req, res, next) {
       if (mensajeMap[estado]) {
         await crearMensajeSistema(req.params.id, mensajeMap[estado], req.user.id, req.user.role);
       }
+      // Correo automático al candidato en cualquier cambio de estado significativo
+      const t = tplCambioEstado({
+        fullName: post.candidatoNombre,
+        vacanteTitulo: post.vacanteTitulo,
+        estado, nota: notas || null,
+      });
+      sendMail({ to: post.candidatoEmail, ...t }).catch(() => {});
     }
-    // Auto-cierre si se contrató: cuenta contratados y cierra vacante si cubre cupos
     if (estado === 'contratada') {
       await autoCierreVacante(post.vacante_id);
     }

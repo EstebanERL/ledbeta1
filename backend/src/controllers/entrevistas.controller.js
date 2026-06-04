@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
 import { crearMensajeSistema } from './mensajes.controller.js';
+import { sendMail, tplEntrevista } from '../services/email.service.js';
+
 
 const schema = z.object({
   postulacionId: z.string().uuid(),
@@ -49,8 +51,26 @@ export async function crearEntrevista(req, res, next) {
       `Se programó una entrevista ${d.modalidad} para el ${when}.${loc}${d.notas ? `\n\nNotas: ${d.notas}` : ''}`,
       req.user.id, req.user.role,
     );
+    // Correo al candidato con detalles de la entrevista
+    const info = await queryOne(
+      `SELECT u.email, u.full_name AS fullName, v.titulo AS vacanteTitulo
+         FROM postulaciones p
+         JOIN users u ON u.id = p.candidato_id
+         JOIN vacantes v ON v.id = p.vacante_id
+        WHERE p.id = ?`,
+      [d.postulacionId],
+    );
+    if (info?.email) {
+      const t = tplEntrevista({
+        fullName: info.fullName, vacanteTitulo: info.vacanteTitulo,
+        fechaISO: new Date(d.programadaPara).toISOString(),
+        modalidad: d.modalidad, link: d.link, ubicacion: d.ubicacion, notas: d.notas,
+      });
+      sendMail({ to: info.email, ...t }).catch(() => {});
+    }
     res.status(201).json({ id });
   } catch (e) { next(e); }
+
 }
 
 export async function actualizarEntrevista(req, res, next) {
