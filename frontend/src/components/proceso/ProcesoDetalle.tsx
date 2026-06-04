@@ -16,30 +16,65 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   Loader2, MessageSquare, Send, CalendarClock, ClipboardCheck, Video, MapPin, Phone,
-  CheckCircle2, XCircle, ChevronDown, FileText,
+  CheckCircle2, XCircle, ChevronDown, FileText, FileDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { exportProcesoPDF, exportEvaluacionPDF } from "@/lib/export-utils";
+import { ESTADO_LABEL as _EST } from "@/lib/queries";
+
 
 /** Detalle compartido de proceso: timeline, entrevistas, tests asignados y chat. */
 export function ProcesoDetalle({
   id,
   titulo,
   subtitle,
+  candidato,
+  vacante,
+  postulacion,
 }: {
   id: string;
   titulo?: string;
   subtitle?: string;
+  candidato?: { fullName: string; email: string; phone?: string | null; location?: string | null; headline?: string | null };
+  vacante?: { titulo: string; departamento: string; modalidad: string; ubicacion?: string };
+  postulacion?: { id: string; estado: string; createdAt: string; notas?: string | null };
 }) {
+  const { user } = useAuth();
   const { data: eventos = [], isLoading } = useEventos(id);
   const { data: entrevistas = [] } = useEntrevistasByPostulacion(id);
   const { data: asignaciones = [] } = useAsignacionesByPostulacion(id);
+  const { data: mensajes = [] } = useMensajes(id);
+  const canDownload = user?.role === "super_admin" || user?.role === "rrhh";
+
+  const handleDownload = () => {
+    if (!candidato || !vacante || !postulacion) {
+      toast.error("Datos del proceso incompletos");
+      return;
+    }
+    exportProcesoPDF({
+      postulacion, candidato, vacante,
+      eventos: eventos as any, entrevistas: entrevistas as any,
+      asignaciones: asignaciones as any, mensajes: mensajes as any,
+      estadoLabel: _EST,
+    });
+  };
 
   return (
     <>
       <SheetHeader>
-        <SheetTitle>{titulo}</SheetTitle>
-        <SheetDescription>{subtitle ?? "Timeline, entrevistas, tests y mensajes del proceso"}</SheetDescription>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <SheetTitle>{titulo}</SheetTitle>
+            <SheetDescription>{subtitle ?? "Timeline, entrevistas, tests y mensajes del proceso"}</SheetDescription>
+          </div>
+          {canDownload && candidato && vacante && postulacion && (
+            <Button size="sm" variant="outline" onClick={handleDownload}>
+              <FileDown className="mr-1 h-4 w-4" /> PDF
+            </Button>
+          )}
+        </div>
       </SheetHeader>
+
 
       <div className="mt-6 space-y-6">
         <section>
@@ -109,10 +144,20 @@ function AsignacionCard({ a }: { a: any }) {
   const [open, setOpen] = useState(false);
   const [obs, setObs] = useState(a.observaciones ?? "");
   const puedeCalificar = user?.role && ["evaluador", "rrhh", "super_admin"].includes(user.role);
+  const canDownload = user?.role === "super_admin" || user?.role === "rrhh";
   const r = calcularResumenAsignacion(a);
   const completado = r.completado;
 
+  const downloadEval = () => {
+    exportEvaluacionPDF({
+      candidato: { fullName: a.candidatoNombre ?? "Candidato", email: a.candidatoEmail ?? "" },
+      test: { titulo: a.titulo, tipo: a.tipo, categoria: a.categoria },
+      asignacion: a,
+    });
+  };
+
   const calificar = useMutation({
+
     mutationFn: async () =>
       (await api.patch(`/test-asignaciones/${a.id}/calificar`, { observaciones: obs })).data,
     onSuccess: () => {

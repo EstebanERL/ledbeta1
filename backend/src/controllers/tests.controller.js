@@ -4,6 +4,8 @@ import { query, queryOne } from '../config/db.js';
 import { registrarEvento } from './eventos.controller.js';
 import { crearMensajeSistema } from './mensajes.controller.js';
 import { generateTest } from '../services/ai.service.js';
+import { sendMail, tplTestAsignado } from '../services/email.service.js';
+
 
 const preguntaSchema = z.object({
   id: z.string().min(1),
@@ -171,8 +173,25 @@ export async function asignarTest(req, res, next) {
       `Se te asignó un nuevo test ${t?.tipo || ''}: "${t?.titulo || ''}". Revísalo en "Mis tests".${observaciones ? `\n\nInstrucciones: ${observaciones}` : ''}`,
       req.user.id, req.user.role,
     );
+    // Correo al candidato
+    const cand = await queryOne(
+      `SELECT u.email, u.full_name AS fullName, v.titulo AS vacanteTitulo
+         FROM postulaciones p
+         JOIN users u ON u.id = p.candidato_id
+         JOIN vacantes v ON v.id = p.vacante_id
+        WHERE p.id = ?`,
+      [postulacionId],
+    );
+    if (cand?.email) {
+      const m = tplTestAsignado({
+        fullName: cand.fullName, vacanteTitulo: cand.vacanteTitulo,
+        testTitulo: t?.titulo || 'Test', instrucciones: observaciones || null,
+      });
+      sendMail({ to: cand.email, ...m }).catch(() => {});
+    }
     res.status(201).json({ id });
   } catch (e) { next(e); }
+
 }
 
 export async function listAsignacionesPostulacion(req, res, next) {
