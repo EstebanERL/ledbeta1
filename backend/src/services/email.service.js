@@ -27,11 +27,14 @@ function getTransporter() {
     return false;
   }
   _transporter = nodemailer.createTransport({
-    host,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: String(process.env.SMTP_SECURE || 'false').toLowerCase() === 'true',
-    auth: { user, pass },
-  });
+  host,
+  port: Number(process.env.SMTP_PORT || 587),
+  secure: false,
+  auth: { user, pass },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
   return _transporter;
 }
 
@@ -79,6 +82,7 @@ function escape(s) {
 }
 
 export async function sendMail({ to, subject, html, text }) {
+  console.log("[EMAIL] Intentando enviar correo a:", to);
   if (!to) return { skipped: true };
   const t = getTransporter();
   if (!t) {
@@ -87,6 +91,7 @@ export async function sendMail({ to, subject, html, text }) {
   }
   try {
     const info = await t.sendMail({ from: FROM, to, subject, html, text: text || stripHtml(html) });
+    console.log("[EMAIL OK]", info);
     return { ok: true, messageId: info.messageId };
   } catch (err) {
     console.error(`[email] Error enviando a ${to}:`, err.message);
