@@ -147,7 +147,10 @@ export default function UsuariosPage() {
                     const t = ROLE_THEMES[u.role];
                     return (
                       <tr key={u.id} className="border-b last:border-0 hover:bg-muted/40">
-                        <td className="px-3 py-3 font-medium">{t.symbol} {u.fullName}</td>
+                        <td className="px-3 py-3 font-medium flex items-center gap-2">
+                          <t.Symbol className="h-4 w-4" />
+                          {u.fullName}
+                        </td>
                         <td className="px-3 py-3 text-muted-foreground">{u.email}</td>
                         <td className="px-3 py-3">
                           <Select value={u.role} onValueChange={(v) => updateRoleMut.mutate({ id: u.id, role: v })}>

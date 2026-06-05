@@ -157,9 +157,10 @@ function EstadisticasTab({ vacantes, postulaciones, users, isAdmin }: any) {
   const byEstadoVac = ["borrador", "abierta", "pausada", "cerrada"].map((e) => ({
     name: e, value: vacantes.filter((v: any) => v.estado === e).length,
   }));
-  const byDepto = Object.entries(vacantes.reduce<Record<string, number>>((a: any, v: any) => {
-    a[v.departamento] = (a[v.departamento] || 0) + 1; return a;
-  }, {})).map(([name, value]) => ({ name, value })).slice(0, 8);
+  const byDepto = Object.entries(vacantes.reduce((a: Record<string, number>, v: any) => {
+    a[v.departamento] = (a[v.departamento] || 0) + 1;
+    return a;
+  }, {} as Record<string, number>)).map(([name, value]) => ({ name, value })).slice(0, 8);
   const byEstadoPost = ["enviada", "en_revision", "evaluacion", "entrevista_pendiente", "rechazada", "contratada"].map((e) => ({
     name: ESTADO_LABEL[e] ?? e, value: postulaciones.filter((p: any) => p.estado === e).length,
   }));

@@ -69,7 +69,10 @@ export default function SistemaPage() {
                   };
                   return (
                     <tr key={r} className="border-b last:border-0">
-                      <td className="px-3 py-3 font-medium">{t.symbol} {t.label}</td>
+                      <td className="px-3 py-3 font-medium flex items-center gap-2">
+                          <t.Symbol className="h-4 w-4" />
+                          {t.label}
+                        </td>
                       <td className="px-3 py-3 text-muted-foreground">{perms[r]}</td>
                       <td className="px-3 py-3">{users.filter((u) => u.role === r).length}</td>
                     </tr>
