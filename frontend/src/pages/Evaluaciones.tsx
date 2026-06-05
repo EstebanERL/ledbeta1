@@ -21,6 +21,7 @@ import {
   Sparkles, Copy, Power, Trash2, Edit3, Library, BarChart3, Inbox,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ExportButtons } from "@/components/ExportButtons";
 
 export default function EvaluacionesPage() {
   return (
