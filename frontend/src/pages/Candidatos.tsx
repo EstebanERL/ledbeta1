@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ProcesoDetalle } from "@/components/proceso/ProcesoDetalle";
+import { ExportButtons } from "@/components/ExportButtons";
 
 export default function CandidatosPage() {
   const { data, isLoading } = usePostulaciones();
