@@ -13,3 +13,10 @@ const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`TalentForge API running on http://localhost:${PORT}`);
 });
+
+app.get("/", (req, res) => {
+  res.json({
+    status: "TalentForge API running 🚀",
+    version: "1.0.0"
+  });
+});
