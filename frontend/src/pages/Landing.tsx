@@ -127,7 +127,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-6 text-sm text-white/75">
-              {["JWT por rol", "bcrypt", "Auditoría completa"].map((t) => (
+              {["", "", ""].map((t) => (
                 <div key={t} className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-white/90" /> {t}
                 </div>
@@ -344,7 +344,7 @@ export default function LandingPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-br from-[oklch(0.25_0.12_265_/_0.95)] via-[oklch(0.30_0.14_265_/_0.85)] to-[oklch(0.20_0.10_280_/_0.95)]" />
         <div className="relative mx-auto max-w-5xl px-6 py-20 text-center text-primary-foreground">
-          <h2 className="text-4xl font-bold tracking-tight md:text-5xl">
+          <h2 className="text-4xl font-bold tracking-tight md:text-5xl">x|
             Profesionaliza tu proceso de selección
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-white/80">
