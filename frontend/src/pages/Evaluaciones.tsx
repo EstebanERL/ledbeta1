@@ -79,6 +79,17 @@ function BandejaTab() {
         <StatCard label="Finalizadas" value={String(stats.completadas)} icon={CheckCircle2} tone="success" />
       </div>
 
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Candidatos a evaluar</h3>
+        <ExportButtons
+          filename={`Evaluaciones_${Date.now()}`}
+          title="Bandeja de evaluaciones"
+          subtitle={`${items.length} registros`}
+          head={["Candidato", "Correo", "Vacante", "Departamento", "Estado", "Fecha"]}
+          rows={items.map((p) => [p.candidatoNombre, p.candidatoEmail, p.vacanteTitulo, p.departamento, ESTADO_LABEL[p.estado] ?? p.estado, new Date(p.createdAt).toLocaleString()])}
+        />
+      </div>
+
       <Section title="Candidatos a evaluar">
         {isLoading ? (
           <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
