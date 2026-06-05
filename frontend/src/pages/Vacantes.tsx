@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, StatCard } from "@/components/dashboards/shared";
+import { ExportButtons } from "@/components/ExportButtons";
 import { Briefcase, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
