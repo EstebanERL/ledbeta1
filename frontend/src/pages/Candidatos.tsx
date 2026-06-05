@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ProcesoDetalle } from "@/components/proceso/ProcesoDetalle";
+import { ExportButtons } from "@/components/ExportButtons";
 
 export default function CandidatosPage() {
   const { data, isLoading } = usePostulaciones();
@@ -77,15 +78,26 @@ export default function CandidatosPage() {
           <StatCard label="Aprobados" value={String(stats.aprobados)} icon={Users} tone="success" />
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Input placeholder="Buscar candidato o vacante..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
-          <Select value={estado} onValueChange={setEstado}>
-            <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los estados activos</SelectItem>
-              {estadosActivos.map((e) => <SelectItem key={e} value={e}>{ESTADO_LABEL[e]}</SelectItem>)}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Input placeholder="Buscar candidato o vacante..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-sm" />
+            <Select value={estado} onValueChange={setEstado}>
+              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos los estados activos</SelectItem>
+                {estadosActivos.map((e) => <SelectItem key={e} value={e}>{ESTADO_LABEL[e]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {(user?.role === "super_admin" || user?.role === "rrhh") && (
+            <ExportButtons
+              filename={`Candidatos_${Date.now()}`}
+              title="Pipeline de candidatos"
+              subtitle={`${items.length} registros`}
+              head={["Candidato", "Correo", "Vacante", "Departamento", "Estado", "Fecha"]}
+              rows={items.map((p) => [p.candidatoNombre, p.candidatoEmail, p.vacanteTitulo, p.departamento, ESTADO_LABEL[p.estado] ?? p.estado, new Date(p.createdAt).toLocaleString()])}
+            />
+          )}
         </div>
 
         <Section title={`${items.length} candidatos en proceso`}>

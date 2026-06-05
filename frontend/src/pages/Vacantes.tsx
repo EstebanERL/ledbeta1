@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, StatCard } from "@/components/dashboards/shared";
+import { ExportButtons } from "@/components/ExportButtons";
 import { Briefcase, Plus, Edit, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -118,24 +119,35 @@ export default function VacantesPage() {
               <SelectItem value="cerrada">Cerrada</SelectItem>
             </SelectContent>
           </Select>
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
-            <DialogTrigger asChild>
-              <Button onClick={() => setEditing(empty)} className="bg-gradient-primary">
-                <Plus className="mr-2 h-4 w-4" />Nueva vacante
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editing?.id ? "Editar" : "Nueva"} vacante</DialogTitle>
-              </DialogHeader>
-              {editing && <VacanteForm value={editing} onChange={setEditing} />}
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button onClick={onSave} className="bg-gradient-primary">Guardar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <ExportButtons
+              filename={`Vacantes_${Date.now()}`}
+              title="Listado de vacantes"
+              subtitle={`${filtered.length} registros`}
+              head={["Título", "Departamento", "Modalidad", "Estado", "Publicada", "Cupos"]}
+              rows={filtered.map((v) => [v.titulo, v.departamento, v.modalidad, v.estado, v.publicada ? "Sí" : "No", v.vacantesDisponibles])}
+            />
+            <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }}>
+              <DialogTrigger asChild>
+                <Button onClick={() => setEditing(empty)} className="bg-gradient-primary">
+                  <Plus className="mr-2 h-4 w-4" />Nueva vacante
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{editing?.id ? "Editar" : "Nueva"} vacante</DialogTitle>
+                </DialogHeader>
+                {editing && <VacanteForm value={editing} onChange={setEditing} />}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+                  <Button onClick={onSave} className="bg-gradient-primary">Guardar</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
+
+
 
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
