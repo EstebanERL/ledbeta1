@@ -1,7 +1,10 @@
 import axios from "axios";
 
+const RAW_BASE = (import.meta.env.VITE_API_URL || "http://localhost:4000").replace(/\/+$/, "");
+const BASE_URL = /\/api$/.test(RAW_BASE) ? RAW_BASE : `${RAW_BASE}/api`;
+
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000",
+  baseURL: BASE_URL,
 });
 
 export const TOKEN_KEY = "tf_token";

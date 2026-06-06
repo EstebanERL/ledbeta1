@@ -35,7 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchMe = async () => {
     try {
-      const { data } = await api.get("/api/auth/me");
+      const { data } = await api.get("/auth/me");
       setUser(data.user);
     } catch {
       setUser(null);
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user,
         loading,
         login: async (email, password) => {
-          const { data } = await api.post("/api/auth/login", {
+          const { data } = await api.post("/auth/login", {
             email,
             password,
           });
@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
 
         register: async (payload) => {
-          const { data } = await api.post("/api/auth/register", payload);
+          const { data } = await api.post("/auth/register", payload);
 
           localStorage.setItem(TOKEN_KEY, data.token);
           setUser(data.user);
