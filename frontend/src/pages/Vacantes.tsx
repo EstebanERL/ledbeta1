@@ -42,7 +42,7 @@ export default function VacantesPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await api.get("/api/vacantes");
+      const { data } = await api.get("/vacantes");
       setItems(data.items);
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? "Error cargando vacantes");
