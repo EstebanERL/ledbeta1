@@ -102,6 +102,14 @@ export async function sendMail({ to, subject, html, text }) {
     return { skipped: true };
   }
   try {
+        console.log("[SMTP] Verificando conexión...");
+    t.verify((err, success) => {
+      if (err) {
+        console.error("[SMTP VERIFY ERROR]", err);
+      } else {
+        console.log("[SMTP VERIFY OK]", success);
+      }
+    });
     const info = await t.sendMail({ from: FROM, to, subject, html, text: text || stripHtml(html) });
     console.log("[EMAIL OK]", info);
     return { ok: true, messageId: info.messageId };
