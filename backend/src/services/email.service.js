@@ -29,22 +29,25 @@ function getTransporter() {
     _transporter = false; // sentinel
         return false;
       }
-      nodemailer.createTransport({
-      host,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: false,
-      auth: {
-        user,
-        pass,
-      },
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-  return _transporter;
+      _transporter = nodemailer.createTransport({
+        host,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: false,
+        auth: {
+          user,
+          pass,
+        },
+        connectionTimeout: 30000,
+        greetingTimeout: 30000,
+        socketTimeout: 30000,
+        tls: {
+          rejectUnauthorized: false,
+        },
+      });
+
+console.log("[EMAIL] Transporter creado correctamente");
+
+return _transporter;
 }
 
 const FROM = process.env.MAIL_FROM || 'TalentForge <no-reply@talentforge.local>';
