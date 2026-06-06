@@ -32,7 +32,7 @@ function getTransporter() {
       _transporter = nodemailer.createTransport({
         host,
         port: Number(process.env.SMTP_PORT || 587),
-        secure: false,
+        secure: process.env.SMTP_SECURE === "true",
         auth: {
           user,
           pass,
