@@ -18,7 +18,7 @@ import { errorHandler, notFound } from './middleware/error.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const app = express();
-
+app.set('trust proxy', 1);
 app.use(helmet());
 app.use(
   cors({
@@ -55,3 +55,4 @@ app.use('/api/entrevistas', entrevistasRouter);
 
 app.use(notFound);
 app.use(errorHandler);
+
