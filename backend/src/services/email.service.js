@@ -24,17 +24,23 @@ function getTransporter() {
   if (!host || !user || !pass) {
     console.warn('[email] SMTP no configurado — los correos se registrarán en consola únicamente.');
     _transporter = false; // sentinel
-    return false;
-  }
-  _transporter = nodemailer.createTransport({
-  host,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
-  auth: { user, pass },
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
+        return false;
+      }
+      nodemailer.createTransport({
+      host,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: false,
+      auth: {
+        user,
+        pass,
+      },
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
   return _transporter;
 }
 
