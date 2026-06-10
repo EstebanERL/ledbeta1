@@ -4,6 +4,7 @@ import {
 } from '../controllers/postulaciones.controller.js';
 import { listEventos, crearNotaEvento } from '../controllers/eventos.controller.js';
 import { listMensajes, crearMensaje } from '../controllers/mensajes.controller.js';
+import { getCompatibilidad, analizarPostulacion } from '../controllers/compatibilidad.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/role.js';
 import { upload } from '../middleware/upload.js';
