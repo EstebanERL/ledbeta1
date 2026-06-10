@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 import {
   useEventos, useMensajes, useEntrevistasByPostulacion, useAsignacionesByPostulacion,
   ESTADO_LABEL, TIMELINE_ORDER, roleBadgeColor, ROLE_LABEL,
-  calcularResumenAsignacion, APROBACION_PCT,
+  calcularResumenAsignacion, APROBACION_PCT, useCompatibilidad,
 } from "@/lib/queries";
 import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
@@ -16,7 +16,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import {
   Loader2, MessageSquare, Send, CalendarClock, ClipboardCheck, Video, MapPin, Phone,
-  CheckCircle2, XCircle, ChevronDown, FileText, FileDown,
+  CheckCircle2, XCircle, ChevronDown, FileText, FileDown, Sparkles, RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { exportProcesoPDF, exportEvaluacionPDF } from "@/lib/export-utils";
@@ -132,9 +132,103 @@ export function ProcesoDetalle({
           </section>
         )}
 
+        <CompatibilidadPanel postulacionId={id} />
+
         <ChatPanel postulacionId={id} />
       </div>
     </>
+  );
+}
+
+function CompatibilidadPanel({ postulacionId }: { postulacionId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const canSee = user?.role === "super_admin" || user?.role === "rrhh";
+  const { data, isLoading } = useCompatibilidad(postulacionId, canSee);
+  const analizar = useMutation({
+    mutationFn: async () =>
+      (await api.post(`/postulaciones/${postulacionId}/compatibilidad`)).data.compatibilidad,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["compatibilidad", postulacionId] });
+      toast.success("Análisis de compatibilidad generado");
+    },
+    onError: (e: any) =>
+      toast.error(e?.response?.data?.error ?? "No se pudo generar el análisis"),
+  });
+  if (!canSee) return null;
+
+  const score = data?.score ?? 0;
+  const tone =
+    score >= 75 ? "text-emerald-600" :
+    score >= 50 ? "text-amber-600" : "text-rose-600";
+
+  return (
+    <section className="rounded-xl border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h4 className="flex items-center gap-1 text-sm font-semibold">
+          <Sparkles className="h-4 w-4 text-violet-500" /> Compatibilidad IA
+        </h4>
+        <Button
+          size="sm"
+          variant={data ? "outline" : "default"}
+          onClick={() => analizar.mutate()}
+          disabled={analizar.isPending}
+        >
+          {analizar.isPending
+            ? <><Loader2 className="mr-1 h-4 w-4 animate-spin" /> Analizando…</>
+            : data
+              ? <><RefreshCw className="mr-1 h-4 w-4" /> Re-analizar</>
+              : <><Sparkles className="mr-1 h-4 w-4" /> Analizar compatibilidad con IA</>}
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+      ) : !data ? (
+        <p className="text-xs text-muted-foreground">
+          Aún no se ha generado análisis. Genera uno para evaluar la afinidad entre el candidato y la vacante.
+        </p>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center gap-4">
+            <div className={`text-3xl font-bold ${tone}`}>{score}%</div>
+            <div className="flex-1">
+              <Progress value={score} className="h-2" />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Generado el {new Date(data.generatedAt).toLocaleString()}
+              </p>
+            </div>
+          </div>
+          {data.resumen && <p className="text-sm">{data.resumen}</p>}
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <div className="mb-1 text-xs font-semibold text-emerald-600">Fortalezas</div>
+              <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-0.5">
+                {data.fortalezas.length === 0 && <li>—</li>}
+                {data.fortalezas.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </div>
+            <div>
+              <div className="mb-1 text-xs font-semibold text-rose-600">Aspectos a mejorar</div>
+              <ul className="list-disc pl-5 text-xs text-muted-foreground space-y-0.5">
+                {data.debilidades.length === 0 && <li>—</li>}
+                {data.debilidades.map((f, i) => <li key={i}>{f}</li>)}
+              </ul>
+            </div>
+          </div>
+          {data.opinion && (
+            <div className="rounded-md bg-muted/50 p-3 text-xs">
+              <span className="font-semibold">Opinión: </span>{data.opinion}
+            </div>
+          )}
+          {data.recomendacion && (
+            <div className="rounded-md border-l-4 border-violet-500 bg-violet-500/5 p-3 text-sm">
+              <span className="font-semibold">Recomendación: </span>{data.recomendacion}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

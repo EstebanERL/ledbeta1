@@ -272,3 +272,34 @@ export function calcularResumenAsignacion(a: AsignacionTest) {
   const aprobado = tieneClave && completado ? pct >= APROBACION_PCT : null;
   return { pct, tieneClave, completado, aprobado, max, score };
 }
+
+// ===== Compatibilidad IA candidato ↔ vacante =====
+export type Compatibilidad = {
+  postulacionId: string;
+  score: number;
+  fortalezas: string[];
+  debilidades: string[];
+  opinion: string;
+  recomendacion: string;
+  resumen: string;
+  generatedAt: string;
+};
+
+export function useCompatibilidad(postulacionId: string | null, enabled = true) {
+  return useQuery({
+    enabled: !!postulacionId && enabled,
+    queryKey: ["compatibilidad", postulacionId],
+    queryFn: async () =>
+      (await api.get<{ compatibilidad: Compatibilidad | null }>(`/postulaciones/${postulacionId}/compatibilidad`)).data.compatibilidad,
+  });
+}
+
+// Recomendaciones IA: incluye score + motivo
+export type VacanteRecomendadaIA = Vacante & { motivo?: string };
+export function useVacantesRecomendadasIA(enabled = true) {
+  return useQuery({
+    enabled, queryKey: ["vacantes", "reco-ia"],
+    queryFn: async () => (await api.get<{ items: VacanteRecomendadaIA[] }>("/vacantes/recomendadas-ia")).data.items,
+    staleTime: 5 * 60 * 1000,
+  });
+}

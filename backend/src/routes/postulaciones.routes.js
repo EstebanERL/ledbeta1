@@ -4,6 +4,7 @@ import {
 } from '../controllers/postulaciones.controller.js';
 import { listEventos, crearNotaEvento } from '../controllers/eventos.controller.js';
 import { listMensajes, crearMensaje } from '../controllers/mensajes.controller.js';
+import { getCompatibilidad, analizarPostulacion } from '../controllers/compatibilidad.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/role.js';
 import { upload } from '../middleware/upload.js';
@@ -23,3 +24,7 @@ postulacionesRouter.post('/:id/eventos', requireAuth, requireRole('rrhh', 'super
 // Chat por postulación
 postulacionesRouter.get('/:id/mensajes', requireAuth, listMensajes);
 postulacionesRouter.post('/:id/mensajes', requireAuth, crearMensaje);
+
+// Compatibilidad IA (solo RRHH / super_admin)
+postulacionesRouter.get('/:id/compatibilidad', requireAuth, requireRole('rrhh', 'super_admin'), getCompatibilidad);
+postulacionesRouter.post('/:id/compatibilidad', requireAuth, requireRole('rrhh', 'super_admin'), analizarPostulacion);
