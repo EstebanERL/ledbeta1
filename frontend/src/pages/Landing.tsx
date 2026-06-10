@@ -127,7 +127,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <div className="mt-10 flex flex-wrap gap-6 text-sm text-white/75">
-              {["", "", ""].map((t) => (
+              {["Optimiza tu experiencia con Inteligencia Artificial!"].map((t) => (
                 <div key={t} className="flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-white/90" /> {t}
                 </div>

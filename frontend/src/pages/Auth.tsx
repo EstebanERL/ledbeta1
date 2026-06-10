@@ -99,7 +99,10 @@ export default function AuthPage() {
                 contratado.”
               </p>
               <p className="text-xs text-white/60">
-                Esteban Redondo, Deivis Yepes, Laura Reguillo · Directoria de Talento, LED Corp
+                Esteban Redondo · Director de TalentForge, LED Corp.
+              </p>
+              <p className="text-xs text-white/60">
+                Deivis Yepez y Laura Reguillo · Colaboradores.
               </p>
             </div>
           </div>
