@@ -8,14 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  useMyPostulaciones, useMyProfile, useVacantesRecomendadas, useMyProfileTest,
+  useMyPostulaciones, useMyProfile, useVacantesRecomendadasIA, useMyProfileTest,
   estadoColor, ESTADO_LABEL, fileUrl,
 } from "@/lib/queries";
 
 export function CandidatoDashboard({ name }: { name: string }) {
   const profQ = useMyProfile();
   const postQ = useMyPostulaciones();
-  const recoQ = useVacantesRecomendadas();
+  const recoQ = useVacantesRecomendadasIA();
   const testQ = useMyProfileTest();
 
   if (profQ.isLoading || postQ.isLoading || recoQ.isLoading) {
@@ -98,9 +98,18 @@ export function CandidatoDashboard({ name }: { name: string }) {
                 <article key={v.id} className="group rounded-xl border bg-card p-5 transition hover:shadow-elegant hover:-translate-y-0.5">
                   <div className="flex items-start justify-between gap-2">
                     <Badge variant="secondary">{v.modalidad}</Badge>
-                    {v.score! > 0 && <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">{v.score} match</Badge>}
+                    {typeof v.score === "number" && v.score > 0 && (
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                        {v.score}% match
+                      </Badge>
+                    )}
                   </div>
                   <h3 className="mt-3 font-semibold">{v.titulo}</h3>
+                  {v.motivo && (
+                    <p className="mt-1 line-clamp-2 text-xs text-violet-600">
+                      <Sparkles className="mr-1 inline h-3 w-3" />{v.motivo}
+                    </p>
+                  )}
                   <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{v.descripcion}</p>
                   <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
                     <span className="inline-flex items-center gap-1"><Briefcase className="h-3 w-3" /> {v.departamento}</span>
