@@ -24,3 +24,7 @@ postulacionesRouter.post('/:id/eventos', requireAuth, requireRole('rrhh', 'super
 // Chat por postulación
 postulacionesRouter.get('/:id/mensajes', requireAuth, listMensajes);
 postulacionesRouter.post('/:id/mensajes', requireAuth, crearMensaje);
+
+// Compatibilidad IA (solo RRHH / super_admin)
+postulacionesRouter.get('/:id/compatibilidad', requireAuth, requireRole('rrhh', 'super_admin'), getCompatibilidad);
+postulacionesRouter.post('/:id/compatibilidad', requireAuth, requireRole('rrhh', 'super_admin'), analizarPostulacion);
