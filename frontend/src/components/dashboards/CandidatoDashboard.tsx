@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { PageHeader, StatCard, Section } from "./shared";
 import {
   Briefcase, FileText, MapPin, ArrowRight, Loader2, CheckCircle2, Activity,
-  Sparkles, Phone, Brain, FileCheck2,
+  Sparkles, Phone, Brain, FileCheck2, Clock, Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,22 +10,36 @@ import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   useMyPostulaciones, useMyProfile, useVacantesRecomendadasIA, useMyProfileTest,
+  useVacantesPublic,
   estadoColor, ESTADO_LABEL, fileUrl,
 } from "@/lib/queries";
 
 export function CandidatoDashboard({ name }: { name: string }) {
   const profQ = useMyProfile();
   const postQ = useMyPostulaciones();
-  const recoQ = useVacantesRecomendadasIA();
   const testQ = useMyProfileTest();
 
-  if (profQ.isLoading || postQ.isLoading || recoQ.isLoading) {
+  // Por defecto se muestran los empleos recientes (endpoint público).
+  // El usuario debe pulsar el botón "Empleos recomendados (IA)" para activar la IA.
+  const [useIA, setUseIA] = useState(false);
+  const recentQ = useVacantesPublic();
+  const recoQ = useVacantesRecomendadasIA(useIA);
+
+  if (profQ.isLoading || postQ.isLoading) {
     return <div className="flex h-96 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
   const profile = profQ.data;
   const post = postQ.data ?? [];
+  const recientes = (recentQ.data ?? []).slice().sort((a, b) => {
+    const ta = new Date(a.fechaPublicacion ?? a.createdAt).getTime();
+    const tb = new Date(b.fechaPublicacion ?? b.createdAt).getTime();
+    return tb - ta;
+  });
   const reco = recoQ.data ?? [];
+  const lista = useIA ? reco : recientes;
+  const cargandoLista = useIA ? recoQ.isLoading : recentQ.isLoading;
+
   const activas = post.filter((p) => !["rechazada", "contratada"].includes(p.estado));
   const initials = (profile?.fullName || name).slice(0, 2).toUpperCase();
 
@@ -84,44 +99,81 @@ export function CandidatoDashboard({ name }: { name: string }) {
           <StatCard label="Contratado" value={String(post.filter((p) => p.estado === "contratada").length)} icon={CheckCircle2} tone="success" />
         </div>
 
-        <Section title="Empleos recomendados" action={
-          <Button asChild size="sm" variant="outline"><Link to="/buscar-empleos">Ver todos <ArrowRight className="ml-1 h-3 w-3" /></Link></Button>
-        }>
-          {reco.length === 0 ? (
-            <div className="rounded-lg border border-dashed py-10 text-center text-sm text-muted-foreground">
-              <Sparkles className="mx-auto mb-2 h-6 w-6 opacity-50" />
-              Completa tu perfil y habilidades para recibir recomendaciones personalizadas.
+        <Section
+          title={useIA ? "Empleos recomendados por IA" : "Empleos recientes"}
+          action={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant={useIA ? "default" : "outline"}
+                className={useIA ? "bg-gradient-primary" : ""}
+                onClick={() => setUseIA((v) => !v)}
+              >
+                {useIA ? (
+                  <><Clock className="mr-1 h-3.5 w-3.5" /> Ver recientes</>
+                ) : (
+                  <><Sparkles className="mr-1 h-3.5 w-3.5" /> Empleos recomendados (IA)</>
+                )}
+              </Button>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/buscar-empleos">Ver todos <ArrowRight className="ml-1 h-3 w-3" /></Link>
+              </Button>
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {reco.map((v) => (
-                <article key={v.id} className="group rounded-xl border bg-card p-5 transition hover:shadow-elegant hover:-translate-y-0.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <Badge variant="secondary">{v.modalidad}</Badge>
-                    {typeof v.score === "number" && v.score > 0 && (
-                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
-                        {v.score}% match
-                      </Badge>
-                    )}
-                  </div>
-                  <h3 className="mt-3 font-semibold">{v.titulo}</h3>
-                  {v.motivo && (
-                    <p className="mt-1 line-clamp-2 text-xs text-violet-600">
-                      <Sparkles className="mr-1 inline h-3 w-3" />{v.motivo}
-                    </p>
-                  )}
-                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{v.descripcion}</p>
-                  <div className="mt-3 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Briefcase className="h-3 w-3" /> {v.departamento}</span>
-                    <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {v.ubicacion}</span>
-                  </div>
-                  <Button asChild size="sm" className="mt-4 w-full bg-gradient-primary">
-                    <Link to="/buscar-empleos">Ver vacante</Link>
-                  </Button>
-                </article>
-              ))}
-            </div>
-          )}
+          }
+        >
+          {/* Cuadro con scrollbar para no obligar a deslizar toda la página */}
+          <div className="max-h-[28rem] overflow-y-auto rounded-xl border bg-muted/20 p-3">
+            {cargandoLista ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : lista.length === 0 ? (
+              <div className="rounded-lg border border-dashed bg-card py-10 text-center text-sm text-muted-foreground">
+                <Sparkles className="mx-auto mb-2 h-6 w-6 opacity-50" />
+                {useIA
+                  ? "Completa tu perfil y habilidades para recibir recomendaciones personalizadas."
+                  : "No hay empleos recientes publicados por ahora."}
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {lista.map((v) => {
+                  const cupos = Number((v as any).vacantesDisponibles ?? 0);
+                  return (
+                    <article key={v.id} className="group rounded-xl border bg-card p-5 transition hover:shadow-elegant hover:-translate-y-0.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <Badge variant="secondary">{v.modalidad}</Badge>
+                        {useIA && typeof v.score === "number" && v.score > 0 && (
+                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                            {v.score}% match
+                          </Badge>
+                        )}
+                      </div>
+                      <h3 className="mt-3 font-semibold">{v.titulo}</h3>
+                      {useIA && (v as any).motivo && (
+                        <p className="mt-1 line-clamp-2 text-xs text-violet-600">
+                          <Sparkles className="mr-1 inline h-3 w-3" />{(v as any).motivo}
+                        </p>
+                      )}
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{v.descripcion}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1"><Briefcase className="h-3 w-3" /> {v.departamento}</span>
+                        <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {v.ubicacion}</span>
+                        {cupos > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 font-medium text-foreground/80">
+                            <Users className="h-3 w-3" /> {cupos} {cupos === 1 ? "cupo" : "cupos"}
+                          </span>
+                        )}
+                      </div>
+                      {/* Lleva directo a la pestaña de postulación con la vacante preseleccionada */}
+                      <Button asChild size="sm" className="mt-4 w-full bg-gradient-primary">
+                        <Link to={`/buscar-empleos?vacante=${v.id}`}>Postularme</Link>
+                      </Button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </Section>
 
         <Section title="Mis postulaciones recientes" action={
