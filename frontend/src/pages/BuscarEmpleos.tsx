@@ -1,9 +1,10 @@
 // Vista de empleos para candidatos dentro del workspace autenticado.
 // Reutiliza el endpoint público /vacantes/public pero queda embebida en el layout.
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
-import { useMyPostulaciones, fileUrl } from "@/lib/queries";
+import { useMyPostulaciones } from "@/lib/queries";
 import { PageHeader, Section } from "@/components/dashboards/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,13 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Search, MapPin, Building2, Briefcase, CheckCircle2, FileText, Loader2 } from "lucide-react";
+import { Search, MapPin, Building2, Briefcase, CheckCircle2, FileText, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 type V = {
   id: string; titulo: string; departamento: string; ubicacion: string; modalidad: string;
   tipoContrato: string; salarioMin?: string | null; salarioMax?: string | null; moneda: string;
   descripcion: string; requisitos?: string | null; beneficios?: string | null;
+  vacantesDisponibles?: number;
 };
 
 export default function BuscarEmpleosPage() {
@@ -29,6 +31,7 @@ export default function BuscarEmpleosPage() {
   const [contrato, setContrato] = useState("");
   const [orden, setOrden] = useState("recientes");
   const [sel, setSel] = useState<V | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: ["empleos-auth", dept, mod, contrato, q],
@@ -45,6 +48,20 @@ export default function BuscarEmpleosPage() {
 
   const { data: mine = [] } = useMyPostulaciones();
   const postuladas = new Set(mine.map((p) => p.vacanteId));
+
+  // Si llega ?vacante=ID (p. ej. desde el panel del candidato), abrimos el diálogo de postulación.
+  const preselectId = searchParams.get("vacante");
+  useEffect(() => {
+    if (!preselectId || items.length === 0) return;
+    const found = items.find((v) => v.id === preselectId);
+    if (found) {
+      setSel(found);
+      // limpiamos el query param para que recargar no re-abra el diálogo
+      const next = new URLSearchParams(searchParams);
+      next.delete("vacante");
+      setSearchParams(next, { replace: true });
+    }
+  }, [preselectId, items, searchParams, setSearchParams]);
 
   const applyMut = useMutation({
     mutationFn: async (id: string) => (await api.post("/postulaciones", { vacanteId: id })).data,
@@ -120,38 +137,49 @@ export default function BuscarEmpleosPage() {
             <p className="py-6 text-center text-sm text-muted-foreground">Ajusta los filtros para encontrar más vacantes.</p>
           </Section>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {sorted.map((v) => {
-              const ya = postuladas.has(v.id);
-              return (
-                <article key={v.id} className="group flex flex-col rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-elegant hover:-translate-y-0.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <Badge variant="secondary">{v.modalidad}</Badge>
-                    <Badge variant="outline">{v.tipoContrato.replace("_", " ")}</Badge>
-                  </div>
-                  <h3 className="mt-3 text-lg font-semibold">{v.titulo}</h3>
-                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{v.departamento}</span>
-                    <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{v.ubicacion}</span>
-                  </div>
-                  <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{v.descripcion}</p>
-                  {(v.salarioMin || v.salarioMax) && (
-                    <div className="mt-3 text-sm font-medium text-primary">
-                      {v.salarioMin && Number(v.salarioMin).toLocaleString("es-CO")} —{" "}
-                      {v.salarioMax && Number(v.salarioMax).toLocaleString("es-CO")} {v.moneda}
+          // Cuadro con scrollbar que ocupa la ventana disponible para no saturar la página.
+          <div className="h-[calc(100vh-22rem)] min-h-[28rem] overflow-y-auto rounded-2xl border bg-muted/20 p-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {sorted.map((v) => {
+                const ya = postuladas.has(v.id);
+                const cupos = Number(v.vacantesDisponibles ?? 0);
+                return (
+                  <article key={v.id} className="group flex flex-col rounded-2xl border bg-card p-5 shadow-sm transition hover:shadow-elegant hover:-translate-y-0.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <Badge variant="secondary">{v.modalidad}</Badge>
+                      <Badge variant="outline">{v.tipoContrato.replace("_", " ")}</Badge>
                     </div>
-                  )}
-                  <div className="mt-auto flex gap-2 pt-4">
-                    <Button variant="outline" className="flex-1" onClick={() => setSel(v)}>Ver detalle</Button>
-                    {ya ? (
-                      <Button disabled variant="outline"><CheckCircle2 className="mr-1 h-4 w-4 text-emerald-500" />Postulado</Button>
-                    ) : (
-                      <Button className="bg-gradient-primary" onClick={() => setSel(v)}><Briefcase className="mr-1 h-4 w-4" />Postularme</Button>
+                    <h3 className="mt-3 text-lg font-semibold">{v.titulo}</h3>
+                    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{v.departamento}</span>
+                      <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{v.ubicacion}</span>
+                    </div>
+                    <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{v.descripcion}</p>
+                    {(v.salarioMin || v.salarioMax) && (
+                      <div className="mt-3 text-sm font-medium text-primary">
+                        {v.salarioMin && Number(v.salarioMin).toLocaleString("es-CO")} —{" "}
+                        {v.salarioMax && Number(v.salarioMax).toLocaleString("es-CO")} {v.moneda}
+                      </div>
                     )}
-                  </div>
-                </article>
-              );
-            })}
+                    {/* Cupos restantes visibles fuera del detalle */}
+                    <div className="mt-3 inline-flex w-fit items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground/80">
+                      <Users className="h-3 w-3" />
+                      {cupos > 0
+                        ? (cupos === 1 ? "1 cupo restante" : `${cupos} cupos restantes`)
+                        : "Sin cupos disponibles"}
+                    </div>
+                    <div className="mt-auto flex gap-2 pt-4">
+                      <Button variant="outline" className="flex-1" onClick={() => setSel(v)}>Ver detalle</Button>
+                      {ya ? (
+                        <Button disabled variant="outline"><CheckCircle2 className="mr-1 h-4 w-4 text-emerald-500" />Postulado</Button>
+                      ) : (
+                        <Button className="bg-gradient-primary" onClick={() => setSel(v)}><Briefcase className="mr-1 h-4 w-4" />Postularme</Button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -163,6 +191,14 @@ export default function BuscarEmpleosPage() {
             <DialogDescription>{sel?.departamento} · {sel?.ubicacion} · {sel?.modalidad}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 text-sm">
+            {sel && (
+              <div className="inline-flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1 text-xs font-medium">
+                <Users className="h-3.5 w-3.5 text-primary" />
+                {Number(sel.vacantesDisponibles ?? 0) > 0
+                  ? `${sel.vacantesDisponibles} ${Number(sel.vacantesDisponibles) === 1 ? "cupo restante" : "cupos restantes"}`
+                  : "Sin cupos disponibles"}
+              </div>
+            )}
             <p className="whitespace-pre-line text-muted-foreground">{sel?.descripcion}</p>
             {sel?.requisitos && <div><h4 className="font-semibold">Requisitos</h4><p className="whitespace-pre-line text-muted-foreground">{sel.requisitos}</p></div>}
             {sel?.beneficios && <div><h4 className="font-semibold">Beneficios</h4><p className="whitespace-pre-line text-muted-foreground">{sel.beneficios}</p></div>}

@@ -305,84 +305,87 @@ export default function EmpleosPage() {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {items.map((v) => {
-              const yaPostulado =
-                !!user && user.role === "candidato" && postulado.has(v.id);
-              const cupos = Number(v.vacantesDisponibles ?? 1);
-              return (
-                <article
-                  key={v.id}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elegant"
-                >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-primary opacity-0 transition group-hover:opacity-100" />
+          // Cuadro con scrollbar que ocupa la ventana disponible para mejorar la experiencia.
+          <div className="h-[calc(100vh-20rem)] min-h-[30rem] overflow-y-auto rounded-2xl border bg-muted/20 p-4">
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {items.map((v) => {
+                const yaPostulado =
+                  !!user && user.role === "candidato" && postulado.has(v.id);
+                const cupos = Number(v.vacantesDisponibles ?? 1);
+                return (
+                  <article
+                    key={v.id}
+                    className="group relative flex flex-col overflow-hidden rounded-2xl border bg-card p-6 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elegant"
+                  >
+                    <div className="absolute inset-x-0 top-0 h-1 bg-gradient-primary opacity-0 transition group-hover:opacity-100" />
 
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary/10 text-primary ring-1 ring-primary/15">
-                      <Briefcase className="h-5 w-5" />
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-primary/10 text-primary ring-1 ring-primary/15">
+                        <Briefcase className="h-5 w-5" />
+                      </div>
+                      <div className="flex flex-wrap justify-end gap-1.5">
+                        <Badge variant="secondary" className="capitalize">
+                          {v.modalidad}
+                        </Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {v.tipoContrato.replace("_", " ")}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex flex-wrap justify-end gap-1.5">
-                      <Badge variant="secondary" className="capitalize">
-                        {v.modalidad}
-                      </Badge>
-                      <Badge variant="outline" className="capitalize">
-                        {v.tipoContrato.replace("_", " ")}
-                      </Badge>
+
+                    <h3 className="mt-4 text-lg font-semibold leading-tight tracking-tight">
+                      {v.titulo}
+                    </h3>
+
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" />
+                        {v.departamento}
+                      </span>
+                      <span className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {v.ubicacion}
+                      </span>
                     </div>
-                  </div>
 
-                  <h3 className="mt-4 text-lg font-semibold leading-tight tracking-tight">
-                    {v.titulo}
-                  </h3>
+                    <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
+                      {v.descripcion}
+                    </p>
 
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                      <Building2 className="h-3.5 w-3.5" />
-                      {v.departamento}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {v.ubicacion}
-                    </span>
-                  </div>
-
-                  <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
-                    {v.descripcion}
-                  </p>
-
-                  {(v.salarioMin || v.salarioMax) && (
-                    <div className="mt-4 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary">
-                      {v.salarioMin && Number(v.salarioMin).toLocaleString("es-CO")}
-                      {v.salarioMin && v.salarioMax && " — "}
-                      {v.salarioMax && Number(v.salarioMax).toLocaleString("es-CO")}{" "}
-                      <span className="text-xs font-medium opacity-75">{v.moneda}</span>
-                    </div>
-                  )}
-
-                  <div className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
-                    <CheckCircle2 className="h-3 w-3" />
-                    {cupos === 1 ? "1 cupo disponible" : `${cupos} cupos disponibles`}
-                  </div>
-
-                  <div className="mt-auto pt-5">
-                    {yaPostulado ? (
-                      <Button disabled variant="outline" className="w-full">
-                        <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" />
-                        Ya te postulaste
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={() => onApplyClick(v)}
-                        className="group/btn w-full bg-gradient-primary text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99]"
-                      >
-                        <Briefcase className="mr-2 h-4 w-4" />
-                        {user ? "Postularme ahora" : "Iniciar sesión y postularme"}
-                      </Button>
+                    {(v.salarioMin || v.salarioMax) && (
+                      <div className="mt-4 rounded-lg border border-primary/15 bg-primary/5 px-3 py-2 text-sm font-semibold text-primary">
+                        {v.salarioMin && Number(v.salarioMin).toLocaleString("es-CO")}
+                        {v.salarioMin && v.salarioMax && " — "}
+                        {v.salarioMax && Number(v.salarioMax).toLocaleString("es-CO")}{" "}
+                        <span className="text-xs font-medium opacity-75">{v.moneda}</span>
+                      </div>
                     )}
-                  </div>
-                </article>
-              );
-            })}
+
+                    <div className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                      <CheckCircle2 className="h-3 w-3" />
+                      {cupos === 1 ? "1 cupo disponible" : `${cupos} cupos disponibles`}
+                    </div>
+
+                    <div className="mt-auto pt-5">
+                      {yaPostulado ? (
+                        <Button disabled variant="outline" className="w-full">
+                          <CheckCircle2 className="mr-2 h-4 w-4 text-emerald-500" />
+                          Ya te postulaste
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => onApplyClick(v)}
+                          className="group/btn w-full bg-gradient-primary text-primary-foreground shadow-glow transition-transform hover:scale-[1.01] active:scale-[0.99]"
+                        >
+                          <Briefcase className="mr-2 h-4 w-4" />
+                          {user ? "Postularme ahora" : "Iniciar sesión y postularme"}
+                        </Button>
+                      )}
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
           </div>
         )}
       </main>
@@ -427,6 +430,12 @@ export default function EmpleosPage() {
                 <span className="flex items-center gap-1.5 capitalize">
                   <Briefcase className="h-3.5 w-3.5" />
                   {selected.modalidad}
+                </span>
+                <span className="ml-auto flex items-center gap-1.5 rounded-full border bg-muted/60 px-2 py-0.5 font-medium text-foreground/80">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                  {Number(selected.vacantesDisponibles ?? 1) === 1
+                    ? "1 cupo restante"
+                    : `${Number(selected.vacantesDisponibles ?? 0)} cupos restantes`}
                 </span>
               </div>
             )}

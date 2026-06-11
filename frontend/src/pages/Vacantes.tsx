@@ -13,7 +13,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PageHeader, StatCard } from "@/components/dashboards/shared";
 import { ExportButtons } from "@/components/ExportButtons";
-import { Briefcase, Plus, Edit, Trash2, Loader2 } from "lucide-react";
+import { Briefcase, Plus, Edit, Trash2, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
 
 type Vacante = {
@@ -152,31 +152,42 @@ export default function VacantesPage() {
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((v) => (
-              <div key={v.id} className="rounded-2xl border bg-card p-5 shadow-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-semibold">{v.titulo}</h3>
-                  <Badge variant={v.estado === "abierta" ? "default" : "secondary"}>{v.estado}</Badge>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">{v.departamento} · {v.ubicacion}</p>
-                <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{v.descripcion}</p>
-                <div className="mt-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs">
-                    <Switch checked={v.publicada} onCheckedChange={() => togglePublicada(v)} />
-                    <span>{v.publicada ? "Publicada" : "Sin publicar"}</span>
+          // Cuadro con scrollbar para no saturar la pantalla con muchas vacantes.
+          <div className="h-[calc(100vh-22rem)] min-h-[28rem] overflow-y-auto rounded-2xl border bg-muted/20 p-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filtered.map((v) => {
+                const cupos = Number(v.vacantesDisponibles ?? 0);
+                return (
+                  <div key={v.id} className="rounded-2xl border bg-card p-5 shadow-sm">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3 className="font-semibold">{v.titulo}</h3>
+                      <Badge variant={v.estado === "abierta" ? "default" : "secondary"}>{v.estado}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{v.departamento} · {v.ubicacion}</p>
+                    <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{v.descripcion}</p>
+                    {/* Cupos disponibles visibles antes de editar */}
+                    <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] font-medium text-foreground/80">
+                      <Users className="h-3 w-3 text-primary" />
+                      Cupos disponibles: <span className="tabular-nums">{cupos}</span>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Switch checked={v.publicada} onCheckedChange={() => togglePublicada(v)} />
+                        <span>{v.publicada ? "Publicada" : "Sin publicar"}</span>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button size="icon" variant="ghost" onClick={() => { setEditing(v); setOpen(true); }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => onDelete(v.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <Button size="icon" variant="ghost" onClick={() => { setEditing(v); setOpen(true); }}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" onClick={() => onDelete(v.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
