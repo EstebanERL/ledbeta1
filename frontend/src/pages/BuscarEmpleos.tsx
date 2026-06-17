@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Search, MapPin, Building2, Briefcase, CheckCircle2, FileText, Loader2, Users } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmarPostulacionDialog from "@/components/ConfirmarPostulacionDialog";
 
 type V = {
   id: string; titulo: string; departamento: string; ubicacion: string; modalidad: string;
@@ -24,6 +25,7 @@ type V = {
 };
 
 export default function BuscarEmpleosPage() {
+  const [confirmando, setConfirmando] = useState<any>(null);
   const qc = useQueryClient();
   const [q, setQ] = useState("");
   const [dept, setDept] = useState("");
@@ -173,12 +175,23 @@ export default function BuscarEmpleosPage() {
                       {ya ? (
                         <Button disabled variant="outline"><CheckCircle2 className="mr-1 h-4 w-4 text-emerald-500" />Postulado</Button>
                       ) : (
-                        <Button className="bg-gradient-primary" onClick={() => setSel(v)}><Briefcase className="mr-1 h-4 w-4" />Postularme</Button>
+                        <Button className="bg-gradient-primary" onClick={() => setConfirmando(v)}><Briefcase className="mr-1 h-4 w-4" />Postularme</Button>
+                        
                       )}
                     </div>
                   </article>
                 );
               })}
+              <ConfirmarPostulacionDialog
+              open={!!confirmando}
+              onOpenChange={(o) => !o && setConfirmando(null)}
+              vacanteTitulo={confirmando?.titulo}
+              loading={applyMut.isPending}
+              onConfirm={() => {
+                if (!confirmando) return;
+                applyMut.mutate(confirmando.id);
+              }}
+            />
             </div>
           </div>
         )}
@@ -209,9 +222,12 @@ export default function BuscarEmpleosPage() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setSel(null)}>Cerrar</Button>
             {sel && !postuladas.has(sel.id) && (
-              <Button className="bg-gradient-primary" disabled={applyMut.isPending}
-                onClick={() => applyMut.mutate(sel.id)}>
-                {applyMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+              <Button
+                className="bg-gradient-primary"
+                disabled={applyMut.isPending}
+                onClick={() => setConfirmando(sel)}
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
                 Confirmar postulación
               </Button>
             )}
@@ -221,3 +237,4 @@ export default function BuscarEmpleosPage() {
     </div>
   );
 }
+

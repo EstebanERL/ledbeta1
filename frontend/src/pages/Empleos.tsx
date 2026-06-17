@@ -34,6 +34,7 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
+import ConfirmarPostulacionDialog from "@/components/ConfirmarPostulacionDialog";
 
 // Imagen profesional de cabecera (Unsplash – uso libre)
 const HERO_IMAGE =
