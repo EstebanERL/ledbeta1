@@ -32,8 +32,11 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // Static uploads (CVs, avatars)
 const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
-app.use('/uploads', express.static(uploadDir));
-
+app.use('/uploads', express.static(uploadDir, {
+  setHeaders: (res, path) => {
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  }
+}));
 // Rate limit (auth-sensitive)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
