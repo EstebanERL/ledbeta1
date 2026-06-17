@@ -37,6 +37,7 @@ app.use('/uploads', express.static(uploadDir, {
     res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   }
 }));
+
 // Rate limit (auth-sensitive)
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

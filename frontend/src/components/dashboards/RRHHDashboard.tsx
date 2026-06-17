@@ -30,7 +30,7 @@ export function RRHHDashboard({ name }: { name: string }) {
       postulaciones: post.filter((p) => p.createdAt.slice(0, 10) === k).length,
     };
   });
-  const pipeline = ["enviada", "en_revision", "evaluacion", "entrevista", "contratada"].map((e, i) => ({
+  const pipeline = ["enviada", "en_revision", "evaluacion", "entrevista", "contratada", "rechazada"].map((e, i) => ({
     name: e, value: post.filter((p) => p.estado === e).length, color: PIE_COLORS[i],
   })).filter((d) => d.value > 0);
   const tasaConv = post.length ? Math.round((post.filter((p) => p.estado === "contratada").length / post.length) * 1000) / 10 : 0;
