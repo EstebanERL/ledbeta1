@@ -14,7 +14,7 @@ const storage = new CloudinaryStorage({
         ? ["pdf"]
         : ["jpg", "png", "jpeg"],
 
-      public_id: file.originalname,
+      public_id: file.originalname.replace(/\.[^/.]+$/, ""),
     };
   },
 });
