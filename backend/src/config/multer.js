@@ -13,6 +13,8 @@ const storage = new CloudinaryStorage({
       allowed_formats: isPdf
         ? ["pdf"]
         : ["jpg", "png", "jpeg"],
+
+      public_id: file.originalname.replace(/\.[^/.]+$/, ""),
     };
   },
 });
