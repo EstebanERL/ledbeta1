@@ -4,13 +4,21 @@ import cloudinary from "./cloudinary.js";
 
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: "talentforge_uploads",
-    allowed_formats: ["jpg", "png", "jpeg", "pdf"],
-    resource_type: "auto",
+  params: async (req, file) => {
+    const isPdf = file.mimetype === "application/pdf";
+
+    return {
+      folder: "talentforge_uploads",
+      resource_type: isPdf ? "raw" : "image",
+      allowed_formats: isPdf
+        ? ["pdf"]
+        : ["jpg", "png", "jpeg"],
+    };
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({
+  storage,
+});
 
 export default upload;

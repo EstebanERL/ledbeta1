@@ -164,6 +164,8 @@ export async function uploadAvatar(req, res, next) {
     await query('UPDATE users SET avatar_url = ? WHERE id = ?', [url, req.user.id]);
     res.json({ avatarUrl: url });
   } catch (e) { next(e); }
+  console.log("Cloudinary file:", req.file);
+  console.log("URL guardada:", req.file.path);
 }
 
 export async function uploadCv(req, res, next) {
