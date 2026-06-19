@@ -18,9 +18,6 @@ import { errorHandler, notFound } from './middleware/error.js';
 
 const app = express();
 
-// __dirname (ESM fix)
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
 app.set('trust proxy', 1);
 
 // security
