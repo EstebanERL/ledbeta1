@@ -3,9 +3,6 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 // routes
 import uploadRoutes from "./routes/upload.routes.js";
 import { authRouter } from './routes/auth.routes.js';
@@ -45,15 +42,6 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // upload routes (CLOUDINARY)
 app.use("/api/upload", uploadRoutes);
-
-// static uploads (local fallback si usas archivos locales)
-const uploadDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
-
-app.use('/uploads', express.static(uploadDir, {
-  setHeaders: (res) => {
-    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-  }
-}));
 
 // rate limit
 const authLimiter = rateLimit({

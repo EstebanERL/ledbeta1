@@ -160,7 +160,7 @@ export async function updateMe(req, res, next) {
 export async function uploadAvatar(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
-    const url = `/uploads/${req.file.filename}`;
+    const url = req.file.path;
     await query('UPDATE users SET avatar_url = ? WHERE id = ?', [url, req.user.id]);
     res.json({ avatarUrl: url });
   } catch (e) { next(e); }
@@ -169,7 +169,7 @@ export async function uploadAvatar(req, res, next) {
 export async function uploadCv(req, res, next) {
   try {
     if (!req.file) return res.status(400).json({ error: 'Archivo requerido' });
-    const url = `/uploads/${req.file.filename}`;
+    const url = req.file.path;
     await query('UPDATE users SET cv_url = ? WHERE id = ?', [url, req.user.id]);
     res.json({ cvUrl: url });
   } catch (e) { next(e); }

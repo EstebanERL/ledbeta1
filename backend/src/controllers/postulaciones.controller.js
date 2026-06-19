@@ -48,7 +48,10 @@ export async function applyToVacante(req, res, next) {
     );
     if (existing) return res.status(409).json({ error: 'Ya te postulaste a esta vacante' });
 
-    let cvUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    let cvUrl = req.file
+      ? req.file.path
+      : null;    
+
     if (!cvUrl) {
       const u = await queryOne('SELECT cv_url FROM users WHERE id = ?', [req.user.id]);
       cvUrl = u?.cv_url || null;

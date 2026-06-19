@@ -5,8 +5,7 @@ import {
 } from '../controllers/users.controller.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireRole } from '../middleware/role.js';
-import { upload } from '../middleware/upload.js';
-
+import upload from '../config/multer.js';
 export const usersRouter = Router();
 
 // Perfil propio (cualquier usuario autenticado)
